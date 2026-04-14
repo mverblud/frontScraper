@@ -797,8 +797,8 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   /* Cabecera de tabla para impresión */
   .print-items-header {
     display: grid !important;
-    grid-template-columns: 100px 1fr 60px 80px 90px;
-    gap: 10px;
+    grid-template-columns: 110px 1fr 45px 85px 90px;
+    gap: 8px;
     font-size: 8pt;
     font-weight: 600;
     text-transform: uppercase;
@@ -810,8 +810,8 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   
   .cart-item {
     display: grid !important;
-    grid-template-columns: 100px 1fr 60px 80px 90px !important;
-    gap: 10px !important;
+    grid-template-columns: 110px 1fr 45px 85px 90px !important;
+    gap: 8px !important;
     align-items: center !important;
     padding: 6px 0 !important;
     border-bottom: 1px dotted #ccc !important;
@@ -824,6 +824,9 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   .cart-item-info {
     display: contents !important;
   }
+  .cart-item-header {
+    display: contents !important;
+  }
   .cart-item-code {
     font-size: 9pt !important;
     font-family: 'Courier New', monospace !important;
@@ -832,12 +835,22 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
     margin: 0 !important;
     color: #000 !important;
     font-weight: 600;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .cart-item-provider {
+    display: none !important;
   }
   .cart-item-desc {
     font-size: 9pt !important;
     color: #000 !important;
-    white-space: normal !important;
-    overflow: visible !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .cart-item-marca {
+    display: none !important;
   }
   .cart-item-sub {
     display: none !important;

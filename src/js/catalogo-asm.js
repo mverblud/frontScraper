@@ -1,5 +1,12 @@
+import { ASM_CONFIG } from './config.js';
+
 const API_BASE = 'http://localhost:3000';
 const CART_STORAGE_KEY = 'ov_presupuesto';
+
+// ── Constantes de autenticación (desde config.js) ───────────────────────────────
+const ASM_USERNAME  = ASM_CONFIG.USERNAME;
+const ASM_PASSWORD  = ASM_CONFIG.PASSWORD;
+const ASM_TOKEN_KEY = ASM_CONFIG.TOKEN_KEY;
 
 // ── Categorías ASM ────────────────────────────────────────────────────────────
 const CATEGORIAS = [
@@ -201,6 +208,24 @@ pageSizeSelect.addEventListener('change', () => {
   renderPage();
 });
 
+// ── Autenticación ASM ─────────────────────────────────────────────────────────
+async function getAsmToken() {
+  const cached = sessionStorage.getItem(ASM_TOKEN_KEY);
+  if (cached) return cached;
+
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: ASM_USERNAME, password: ASM_PASSWORD })
+  });
+
+  if (!res.ok) throw new Error(`No se pudo autenticar con el servidor ASM (HTTP ${res.status}).`);
+
+  const { token } = await res.json();
+  sessionStorage.setItem(ASM_TOKEN_KEY, token);
+  return token;
+}
+
 // ── Buscar ─────────────────────────────────────────────────────────────────────
 btnBuscar.addEventListener('click', async () => {
   if (!validateTermino()) return;
@@ -213,6 +238,8 @@ btnBuscar.addEventListener('click', async () => {
   hideError();
 
   try {
+    const token = await getAsmToken();
+
     const requestBody = { query };
     if (rubroValue) {
       requestBody.filters = { categoria: rubroValue };
@@ -220,9 +247,17 @@ btnBuscar.addEventListener('click', async () => {
 
     const res = await fetch(`${API_BASE}/search`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(requestBody)
     });
+
+    if (res.status === 401) {
+      sessionStorage.removeItem(ASM_TOKEN_KEY);
+      throw new Error('Sesión expirada. Por favor, recargue la página.');
+    }
     if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
     const data = await res.json();
 

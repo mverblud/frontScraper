@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OV Suspensión · Nueva Marca</title>
+  <title>OV Suspensión · Editar Marca</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -26,28 +26,15 @@
       <div class="nav-section-label">Principal</div>
       <a class="nav-item" href="index.html">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Buscador
-      </a>
-      <a class="nav-item" href="#">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M5 5.5h6M5 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Catálogo
+        Catalogo RM
       </a>
       <a class="nav-item" href="catalogo-asm.html">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5.5h6M5 8h6M5 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Catálogo ASM
       </a>
-      <a class="nav-item" href="#">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Pedidos
-      </a>
       <a class="nav-item active" href="marcas.html">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h5l1 1h6v10H2V2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Marcas
-      </a>
-      <div class="nav-section-label" style="margin-top:24px">Config</div>
-      <a class="nav-item" href="#">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.93 2.93l1.41 1.41M11.66 11.66l1.41 1.41M2.93 13.07l1.41-1.41M11.66 4.34l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Ajustes
       </a>
     </nav>
 
@@ -73,7 +60,7 @@
           <span class="bc-sep">/</span>
           <a href="marcas.html" class="bc-root" style="text-decoration:none;color:inherit">Marcas</a>
           <span class="bc-sep">/</span>
-          <span class="bc-current">Nueva</span>
+          <span class="bc-current">Editar</span>
         </div>
       </div>
       <div class="topbar-right">
@@ -104,15 +91,27 @@
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 3L5 7l3.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Volver a Marcas
         </a>
-        <h1>Nueva Marca</h1>
-        <p>Completá los datos para crear una nueva marca.</p>
+        <h1>Editar Marca</h1>
+        <p>Modificá los datos de la marca.</p>
+      </div>
+
+      <!-- Loading -->
+      <div class="table-loading" id="form-loading" style="display:none">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5" stroke-dasharray="25 25" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="0.7s" repeatCount="indefinite"/></circle></svg>
+        Cargando marca…
+      </div>
+
+      <!-- Error -->
+      <div class="error-card" id="form-error" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#EF4444" stroke-width="1.5"/><path d="M9 5.5V9.5M9 12h.01" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p>No se pudo cargar la marca.</p>
       </div>
 
       <!-- FORM CARD -->
-      <div class="card form-card">
+      <div class="card form-card" id="form-card" style="display:none">
         <div class="card-header">
           <div class="card-title">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.5 2v9M2 6.5h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9.5 1.5l2 2L4 11H2v-2L9.5 1.5z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Datos de la marca
           </div>
         </div>
@@ -123,10 +122,20 @@
             <span class="field-error" id="marca-name-error">El nombre es requerido.</span>
             <span class="field-hint">Máximo 100 caracteres.</span>
           </div>
+          <div class="form-field">
+            <label>Estado</label>
+            <div class="toggle-group">
+              <label class="toggle-switch">
+                <input type="checkbox" id="marca-habilitado" checked />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label-text">Marca habilitada</span>
+            </div>
+          </div>
           <div class="form-actions">
             <button type="submit" class="btn-primary" id="btn-guardar">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span class="btn-text">Guardar</span>
+              <span class="btn-text">Guardar cambios</span>
               <span class="btn-loader" style="display:none">
                 <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5" stroke-dasharray="25 25" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="0.7s" repeatCount="indefinite"/></circle></svg>
               </span>
@@ -143,6 +152,6 @@
   </div>
 
   <script src="marcas.js"></script>
-  <script>initMarcasNueva();</script>
+  <script>initMarcasEditar();</script>
 </body>
 </html>

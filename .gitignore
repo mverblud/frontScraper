@@ -1,0 +1,8 @@
+# Configuración local (contiene credenciales)
+config.js
+
+# Sistema
+.DS_Store
+.vscode/
+node_modules/
+*.log

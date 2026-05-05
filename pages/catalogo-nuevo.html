@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OV Suspensión · Catálogo ASM</title>
+  <title>OV Suspensión · Catálogo Nuevo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../src/styles/style.css" />
@@ -28,11 +28,11 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Catalogo RM
       </a>
-      <a class="nav-item active" href="catalogo-asm.html">
+      <a class="nav-item" href="catalogo-asm.html">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5.5h6M5 8h6M5 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Catálogo ASM
       </a>
-      <a class="nav-item" href="catalogo-nuevo.html">
+      <a class="nav-item active" href="catalogo-nuevo.html">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Catálogo Nuevo
       </a>
@@ -62,7 +62,7 @@
         <div class="breadcrumb">
           <span class="bc-root">Dashboard</span>
           <span class="bc-sep">/</span>
-          <span class="bc-current">Catálogo ASM</span>
+          <span class="bc-current">Catálogo Nuevo</span>
         </div>
       </div>
       <div class="topbar-right">
@@ -70,14 +70,7 @@
           <span class="status-dot"></span>
           API Conectada
         </div>
-        <div class="topbar-source">Source: <strong>ASM</strong></div>
-
-        <!-- CART BUTTON -->
-        <button class="cart-btn" id="cart-btn">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 1h2l1.5 7.5h8L14 5H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="13" r="1" fill="currentColor"/><circle cx="12" cy="13" r="1" fill="currentColor"/></svg>
-          Presupuesto
-          <span class="cart-count" id="cart-count" style="display:none">0</span>
-        </button>
+        <div class="topbar-source">Source: <strong>NV</strong></div>
 
         <!-- THEME TOGGLE -->
         <button class="theme-toggle" id="theme-toggle" title="Cambiar tema">
@@ -90,6 +83,13 @@
             Oscuro
           </span>
         </button>
+
+        <!-- CART BUTTON -->
+        <button class="cart-btn" id="cart-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 1h2l1.5 7.5h8L14 5H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="13" r="1" fill="currentColor"/><circle cx="12" cy="13" r="1" fill="currentColor"/></svg>
+          Presupuesto
+          <span class="cart-count" id="cart-count" style="display:none">0</span>
+        </button>
       </div>
     </header>
 
@@ -98,8 +98,8 @@
 
       <div class="page-title">
         <div>
-          <h1>Catálogo ASM</h1>
-          <p>Buscá productos en el catálogo de ASM.</p>
+          <h1>Catálogo Nuevo</h1>
+          <p>Buscá en el catálogo y agregá items al presupuesto.</p>
         </div>
       </div>
 
@@ -112,22 +112,21 @@
           </div>
         </div>
         <div class="card-body">
-          <div class="filters-grid" style="grid-template-columns:1fr 1fr">
+          <div class="filters-grid">
             <div class="field-group">
               <label for="termino">Término de búsqueda <span class="required-badge">Requerido</span></label>
               <div class="input-wrap">
                 <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                <input type="text" id="termino" placeholder="Ej: corsa, amortiguador, disco..." autocomplete="off"/>
+                <input type="text" id="termino" placeholder="Ej: clio, corsa, amortiguador..." autocomplete="off"/>
               </div>
               <span class="field-error" id="termino-error">Ingresá un término de búsqueda para continuar.</span>
             </div>
             <div class="field-group">
-              <label for="rubro">Rubro / Categoría</label>
-              <div class="input-wrap">
-                <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h12v10H2V2Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 6h12" stroke="currentColor" stroke-width="1.5"/></svg>
-                <select id="rubro">
-                  <option value="">Todos los rubros</option>
-                </select>
+              <label for="rubro">Rubro <span class="opt-badge">Opcional</span></label>
+              <div class="select-wrap">
+                <svg class="select-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M2 7h7M2 10h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <select id="rubro"><option value="">Todos los rubros</option></select>
+                <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
             </div>
           </div>
@@ -141,7 +140,7 @@
             </button>
             <button id="btn-limpiar" class="btn-ghost">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              Limpiar
+              Limpiar filtros
             </button>
           </div>
         </div>
@@ -166,12 +165,11 @@
                 <th class="th-center">Foto</th>
                 <th>Código</th>
                 <th>Aplicación</th>
-                <th>MARCA</th>
-                <th>RUBRO</th>
+                <th>Marca</th>
+                <th>Rubro</th>
                 <th class="th-num">Precio Lista</th>
                 <th class="th-num">Costo</th>
                 <th class="th-num">Precio Venta</th>
-                <th class="th-center">Stock</th>
                 <th class="th-center">Agregar</th>
               </tr>
             </thead>
@@ -199,7 +197,7 @@
         <div class="no-results" id="no-results" style="display:none">
           <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="18" cy="18" r="11" stroke="#CBD5E1" stroke-width="2"/><path d="M26 26L34 34" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/></svg>
           <p class="no-results-title">Sin resultados</p>
-          <p class="no-results-sub">No encontramos productos para el término ingresado.</p>
+          <p class="no-results-sub">No encontramos productos para los filtros seleccionados.</p>
         </div>
       </div>
 
@@ -215,7 +213,7 @@
   <!-- ═══ PRESUPUESTO DRAWER ═══ -->
   <div class="drawer-overlay" id="drawer-overlay"></div>
   <div class="drawer" id="drawer">
-    
+
     <!-- Header para impresión -->
     <div class="print-header print-only">
       <h1>OV Suspensión</h1>
@@ -224,7 +222,7 @@
       <div class="print-doc-title">Presupuesto <span id="print-items-count"></span></div>
       <div class="print-date" id="print-date"></div>
     </div>
-    
+
     <div class="drawer-header">
       <div class="drawer-title">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M1 1h2.5l2 9h9L17 5H5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="13.5" cy="15.5" r="1.2" fill="currentColor"/></svg>
@@ -279,7 +277,7 @@
         <span id="total-final">$0,00</span>
       </div>
     </div>
-    
+
     <!-- Footer para impresión -->
     <div class="print-footer print-only">
       <p>Este presupuesto tiene validez de 7 días.</p>
@@ -315,18 +313,14 @@
           <span class="product-modal-code" id="product-modal-code"></span>
           <h2 class="product-modal-name" id="product-modal-name"></h2>
         </div>
-        <div class="product-modal-details">
-          <div class="product-modal-detail-row">
-            <span class="product-modal-detail-label">Proveedor</span>
-            <span class="product-modal-detail-value" id="product-modal-provider"></span>
+        <div class="product-modal-tags">
+          <div class="product-modal-tag">
+            <span class="product-modal-tag-label">Marca</span>
+            <span class="product-modal-tag-value" id="product-modal-marca"></span>
           </div>
-          <div class="product-modal-detail-row">
-            <span class="product-modal-detail-label">Aplicación</span>
-            <span class="product-modal-detail-value" id="product-modal-aplicacion"></span>
-          </div>
-          <div class="product-modal-detail-row">
-            <span class="product-modal-detail-label">Marca</span>
-            <span class="product-modal-detail-value" id="product-modal-marca"></span>
+          <div class="product-modal-tag">
+            <span class="product-modal-tag-label">Rubro</span>
+            <span class="product-modal-tag-value" id="product-modal-rubro"></span>
           </div>
         </div>
         <div class="product-modal-prices">
@@ -351,6 +345,6 @@
     </div>
   </div>
 
-  <script type="module" src="../src/js/catalogo-asm.js"></script>
+  <script src="../src/js/catalogo-nuevo.js"></script>
 </body>
 </html>

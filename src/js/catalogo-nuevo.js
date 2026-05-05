@@ -1,81 +1,8 @@
-import { ASM_CONFIG } from '../config/config.js';
-
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'http://localhost:3005';
 const CART_STORAGE_KEY = 'ov_presupuesto';
 
-// ── Constantes de autenticación (desde config.js) ───────────────────────────────
-const ASM_USERNAME  = ASM_CONFIG.USERNAME;
-const ASM_PASSWORD  = ASM_CONFIG.PASSWORD;
-const ASM_TOKEN_KEY = ASM_CONFIG.TOKEN_KEY;
-
-// ── Categorías ASM ────────────────────────────────────────────────────────────
-const CATEGORIAS = [
-  { id: "63", nombre: "AMORTIGUADORES" },
-  { id: "67", nombre: "AXIALES" },
-  { id: "71", nombre: "BUJES DE SUSPENSION" },
-  { id: "230", nombre: "DISCOS DE FRENO" },
-  { id: "242", nombre: "EXTREMOS" },
-  { id: "281", nombre: "ROTULAS" },
-  { id: "2593", nombre: "CAMPANAS DE FRENO" },
-  { id: "2656", nombre: "BIELETAS" },
-  { id: "2701", nombre: "JUNTAS HOMOCINETICAS" },
-  { id: "2927", nombre: "SEMIEJES" },
-  { id: "2931", nombre: "CAZOLETAS" },
-  { id: "2937", nombre: "PASTILLAS DE FRENO" },
-  { id: "2957", nombre: "BOMBAS DE FRENO" },
-  { id: "2961", nombre: "CILINDROS DE RUEDA" },
-  { id: "2973", nombre: "KITS DE EMBRAGUE" },
-  { id: "2994", nombre: "TRICETAS" },
-  { id: "2996", nombre: "TENSORES DE CADENA" },
-  { id: "2998", nombre: "TUERCAS DE SEMIEJE" },
-  { id: "2999", nombre: "ABRAZADERAS" },
-  { id: "3002", nombre: "COLUMNAS DE DIRECCION" },
-  { id: "3004", nombre: "MAZAS DE RUEDA" },
-  { id: "3020", nombre: "PARRILLAS DE SUSPENSION" },
-  { id: "3048", nombre: "ESPIGAS DE SEMIEJE" },
-  { id: "3049", nombre: "BRAZOS DE SUSPENSION" },
-  { id: "3057", nombre: "FUELLES SELECTOR" },
-  { id: "3058", nombre: "FUELLES DE SUSPENSION" },
-  { id: "3060", nombre: "KITS FUELLES DE TRANSMISION" },
-  { id: "3075", nombre: "KITS FUELLES DE DIRECCION" },
-  { id: "3077", nombre: "KITS FUELLES Y TOPES DE SUSPENSION" },
-  { id: "3078", nombre: "TOPES DE SUSPENSION" },
-  { id: "3082", nombre: "BARRAS DE DIRECCION" },
-  { id: "3087", nombre: "MANCHONES" },
-  { id: "3110", nombre: "CRUCETAS" },
-  { id: "3118", nombre: "SOPORTES DE CARDAN" },
-  { id: "3125", nombre: "PINZAS PARA ABRAZADERAS" },
-  { id: "3126", nombre: "PRECINTOS PLASTICOS" },
-  { id: "3127", nombre: "GRASAS" },
-  { id: "3130", nombre: "KITS BUJES DE SUSPENSION" },
-  { id: "3185", nombre: "RODAMIENTOS DE RUEDA" },
-  { id: "3193", nombre: "PUNTAS DE EJE" },
-  { id: "3194", nombre: "RODAMIENTOS DE AIRE ACONDICIONADO" },
-  { id: "3195", nombre: "RODAMIENTOS DE CAJA" },
-  { id: "3196", nombre: "RODAMIENTOS RETEN DE PALIER" },
-  { id: "3205", nombre: "RODAMIENTOS DE SUSPENSION" },
-  { id: "3209", nombre: "SOPORTES DE AMORTIGUADOR" },
-  { id: "3210", nombre: "SOPORTES DE MOTOR" },
-  { id: "3211", nombre: "SOPORTES TENSORES" },
-  { id: "3212", nombre: "TENSORES DE CORREA" },
-  { id: "3219", nombre: "CRAPODINAS DE EMBRAGUE" },
-  { id: "3220", nombre: "CAPUCHONES" },
-  { id: "3222", nombre: "CRAPODINAS DE SUSPENSION" },
-  { id: "3226", nombre: "CREMALLERAS DE DIRECCION MECANICAS" },
-  { id: "3227", nombre: "CREMALLERAS DE DIRECCION ELECTRICAS" },
-  { id: "3228", nombre: "CREMALLERAS DE DIRECCION HIDRAULICAS" },
-  { id: "3229", nombre: "RODAMIENTOS DE RUEDA C/ ABS" },
-  { id: "3230", nombre: "RODAMIENTOS DE VENTILADOR" },
-  { id: "3232", nombre: "EJE DE PARRILLA" },
-  { id: "3235", nombre: "CUBRE CAZOLETA" },
-  { id: "3237", nombre: "PALIERS" },
-  { id: "3238", nombre: "ACOPLES" },
-  { id: "3239", nombre: "CAJONES TRASERO" },
-  { id: "3240", nombre: "PUNTERAS DE CHASIS" },
-  { id: "3241", nombre: "DADOS PALANCA DE CAMBIO" }
-];
-
 // ── DOM refs ──────────────────────────────────────────────────────────────────
+const rubroSelect        = document.getElementById('rubro');
 const terminoInput       = document.getElementById('termino');
 const terminoError       = document.getElementById('termino-error');
 const btnBuscar          = document.getElementById('btn-buscar');
@@ -102,9 +29,8 @@ const productModalImg     = document.getElementById('product-modal-img');
 const productModalNoPhoto = document.getElementById('product-modal-no-photo');
 const productModalCode    = document.getElementById('product-modal-code');
 const productModalName    = document.getElementById('product-modal-name');
-const productModalProvider = document.getElementById('product-modal-provider');
-const productModalAplicacion = document.getElementById('product-modal-aplicacion');
 const productModalMarca   = document.getElementById('product-modal-marca');
+const productModalRubro   = document.getElementById('product-modal-rubro');
 const productModalLista   = document.getElementById('product-modal-lista');
 const productModalCosto   = document.getElementById('product-modal-costo');
 const productModalVenta   = document.getElementById('product-modal-venta');
@@ -127,15 +53,11 @@ const btnClearCart   = document.getElementById('btn-clear-cart');
 // Theme
 const themeToggle = document.getElementById('theme-toggle');
 
-// Rubro
-const rubroSelect = document.getElementById('rubro');
-
 // ── Estado ────────────────────────────────────────────────────────────────────
 let allProducts = [];
 let currentPage = 1;
 let pageSize    = parseInt(pageSizeSelect.value);
 
-// carrito compartido: { [key]: { product, qty } }
 let cart = {};
 
 // ── Persistencia carrito ──────────────────────────────────────────────────────
@@ -149,16 +71,16 @@ function loadCart() {
   } catch (_) { cart = {}; }
 }
 
-// ── Normalizar producto ASM ───────────────────────────────────────────────────
-function normalizeAsmProduct(p) {
+// ── Normalizar producto ───────────────────────────────────────────────────────
+function normalizeProduct(p) {
   return {
-    codigo: p.code ?? '—',
-    nombre: p.name ?? p.vehicle ?? '—',
-    marca: (p.brand ?? 'Sin marca').toUpperCase(),
-    rubro: p.category ?? '—',
-    foto: p.image ?? '',
-    precioVenta: p.precioVenta ?? p.price ?? 0,
-    _source: 'asm'
+    codigo: p.codigo ?? '—',
+    nombre: p.descripcion ?? p.nombre ?? '—',
+    marca: p.marca ?? p.marcaName ?? '—',
+    rubro: p.categoria ?? p.rubro ?? p.rubroName ?? '—',
+    foto: p.foto ?? '',
+    precioVenta: p.precioVenta ?? p.precioSugerido ?? p.precio ?? 0,
+    _source: 'nv'
   };
 }
 
@@ -173,14 +95,25 @@ themeToggle.addEventListener('click', () => {
 });
 applyTheme(localStorage.getItem('theme') || 'light');
 
-// ── Cargar rubros ────────────────────────────────────────────────────────────
-function loadRubros() {
-  CATEGORIAS.forEach(cat => {
-    const opt = document.createElement('option');
-    opt.value = cat.nombre;
-    opt.textContent = cat.nombre;
-    rubroSelect.appendChild(opt);
-  });
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  loadRubros();
+}
+
+async function loadRubros() {
+  try {
+    const res = await fetch(`${API_BASE}/rubros?soloHabilitados=true`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    data.rubros.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.rubroId;
+      opt.textContent = r.rubroNombre;
+      rubroSelect.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('Error al cargar rubros:', e);
+  }
 }
 
 // ── Validación ─────────────────────────────────────────────────────────────────
@@ -208,64 +141,42 @@ pageSizeSelect.addEventListener('change', () => {
   renderPage();
 });
 
-// ── Autenticación ASM ─────────────────────────────────────────────────────────
-async function getAsmToken() {
-  const cached = sessionStorage.getItem(ASM_TOKEN_KEY);
-  if (cached) return cached;
-
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: ASM_USERNAME, password: ASM_PASSWORD })
-  });
-
-  if (!res.ok) throw new Error(`No se pudo autenticar con el servidor ASM (HTTP ${res.status}).`);
-
-  const { token } = await res.json();
-  sessionStorage.setItem(ASM_TOKEN_KEY, token);
-  return token;
-}
-
 // ── Buscar ─────────────────────────────────────────────────────────────────────
 btnBuscar.addEventListener('click', async () => {
   if (!validateTermino()) return;
 
-  const query = terminoInput.value.trim();
-  const rubroValue = rubroSelect.value;
+  const termino = terminoInput.value.trim();
+  const rubroId = rubroSelect.value;
+
+  const requestBody = {
+    codigoAuto: termino,
+    rubroId: rubroId ? parseInt(rubroId) : ""
+  };
 
   setLoading(true);
   hideResults();
   hideError();
 
   try {
-    const token = await getAsmToken();
-
-    const requestBody = { query };
-    if (rubroValue) {
-      requestBody.filters = { categoria: rubroValue };
-    }
-
-    const res = await fetch(`${API_BASE}/search`, {
+    const res = await fetch(`${API_BASE}/productos`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
-
-    if (res.status === 401) {
-      sessionStorage.removeItem(ASM_TOKEN_KEY);
-      throw new Error('Sesión expirada. Por favor, recargue la página.');
-    }
     if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
     const data = await res.json();
 
-    allProducts = data.products ?? data.productos ?? [];
-    const total = data.total ?? data.totalProductos ?? allProducts.length;
+    allProducts = data.productos ?? [];
+    const totalProductos = data.totalProductos ?? allProducts.length;
 
-    resultsCount.textContent = `${total} producto${total !== 1 ? 's' : ''}`;
-    resultsQuery.textContent = `"${query}"`;
+    resultsCount.textContent = `${totalProductos} producto${totalProductos !== 1 ? 's' : ''}`;
+
+    const parts = [`"${termino}"`];
+    if (rubroId) {
+      const opt = rubroSelect.querySelector(`option[value="${rubroId}"]`);
+      parts.push(`rubro: ${opt ? opt.textContent : rubroId}`);
+    }
+    resultsQuery.textContent = parts.join(' · ');
 
     currentPage = 1;
     resultsSection.style.display = '';
@@ -288,8 +199,8 @@ btnBuscar.addEventListener('click', async () => {
 
 // ── Limpiar ────────────────────────────────────────────────────────────────────
 btnLimpiar.addEventListener('click', () => {
-  terminoInput.value = '';
   rubroSelect.value = '';
+  terminoInput.value = '';
   terminoInput.classList.remove('has-error');
   terminoError.classList.remove('visible');
   allProducts = [];
@@ -311,32 +222,32 @@ function renderPage() {
   productsBody.innerHTML = '';
   slice.forEach(p => {
     const tr = document.createElement('tr');
-    const image = p.image ?? '';
-    const code = p.code ?? '—';
-    const category = p.category ?? p.name ?? '—';
-    const brand = (p.brand ? p.brand : 'Sin marca').toUpperCase();
-    const vehicle = p.vehicle ?? '—';
-    const precioIva = p.precioIva ?? 0;
-    const precioCosto = p.precioCosto ?? 0;
-    const precioVenta = p.precioVenta ?? p.price ?? 0;
-    const stock = p.stock ?? 0;
+    const codigo      = p.codigo      ?? '—';
+    const desc        = p.descripcion ?? p.nombre ?? '—';
+    const marca       = p.marca ?? p.marcaName ?? '—';
+    const rubro       = p.categoria ?? p.rubro ?? p.rubroName ?? '—';
+    const foto        = p.foto ?? '';
+    const precioLista = null;
+    const costo       = null;
+    const precioVenta = p.precioVenta ?? null;
 
-    const stockClass = stock > 0 ? 'stock-ok' : 'stock-zero';
-    const cartKey = `asm:${code}`;
+    const precioListaStr = precioLista != null ? fmtPrice(precioLista) : '—';
+    const costoStr       = costo != null ? fmtPrice(costo) : '—';
+    const precioVentaStr = precioVenta != null ? fmtPrice(precioVenta) : '—';
+    const cartKey = `nv:${codigo}`;
     const inCart  = !!cart[cartKey];
 
     tr.innerHTML = `
-      <td style="text-align:center">
-        ${image ? `<img src="${escHtml(String(image))}" alt="${escHtml(String(code))}" class="product-thumb" style="width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;" loading="lazy" />` : '—'}
+      <td class="td-foto">
+        ${foto ? `<img src="${escHtml(foto)}" alt="Foto del producto" class="product-thumb" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="no-photo">—</span>'}
       </td>
-      <td><span class="td-code">${escHtml(String(code))}</span></td>
-      <td class="td-aplicacion">${escHtml(String(vehicle))}</td>
-      <td class="td-marca"><span>${escHtml(String(brand))}</span></td>
-      <td class="td-rubro"><span>${escHtml(String(category))}</span></td>
-      <td class="td-precio-lista"><span class="price-symbol">$</span>${escHtml(formatPrice(precioIva))}</td>
-      <td class="td-precio-lista"><span class="price-symbol">$</span>${escHtml(formatPrice(precioCosto))}</td>
-      <td class="td-precio-venta"><span class="price-symbol">$</span>${escHtml(formatPrice(precioVenta))}</td>
-      <td class="td-stock ${stockClass}" style="text-align:center;font-weight:600">${stock}</td>
+      <td><span class="td-code">${escHtml(String(codigo))}</span></td>
+      <td class="td-aplicacion">${escHtml(String(desc))}</td>
+      <td class="td-marca"><span>${escHtml(String(marca))}</span></td>
+      <td class="td-rubro"><span>${escHtml(String(rubro))}</span></td>
+      <td class="td-precio-lista"><span class="price-symbol">$</span>${precioListaStr}</td>
+      <td class="td-costo"><span class="price-symbol">$</span>${costoStr}</td>
+      <td class="td-precio-venta"><span class="price-symbol">$</span>${precioVentaStr}</td>
       <td class="td-add">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
           ${inCart
@@ -352,7 +263,6 @@ function renderPage() {
       addToCart(this.__product);
     });
 
-    // Click en foto → abrir modal
     const thumb = tr.querySelector('.product-thumb');
     if (thumb) {
       thumb.__product = p;
@@ -412,8 +322,8 @@ function buildPageRange(current, total) {
 // ═══════════════════════════════════════════════════════════════
 
 function addToCart(product) {
-  const normalized = normalizeAsmProduct(product);
-  const key = `asm:${normalized.codigo}`;
+  const normalized = normalizeProduct(product);
+  const key = `nv:${normalized.codigo}`;
   if (cart[key]) {
     cart[key].qty += 1;
   } else {
@@ -454,9 +364,9 @@ function updateCartUI() {
 
   drawerCount.textContent = `${count} producto${count !== 1 ? 's' : ''}`;
 
-  drawerEmpty.style.display  = entries.length === 0 ? '' : 'none';
-  drawerTotals.style.display = entries.length > 0 ? '' : 'none';
-  btnImprimir.style.display  = entries.length > 0 ? '' : 'none';
+  drawerEmpty.style.display    = entries.length === 0 ? '' : 'none';
+  drawerTotals.style.display   = entries.length > 0 ? '' : 'none';
+  btnImprimir.style.display    = entries.length > 0 ? '' : 'none';
 
   cartItemsList.innerHTML = '';
   let totalSum = 0;
@@ -469,18 +379,15 @@ function updateCartUI() {
     const subtotal = pVenta * qty;
     totalSum += subtotal;
 
-    const sourceTag = product._source === 'rm' ? 'RM' : product._source === 'asm' ? 'ASM' : '';
+    const sourceTag = product._source === 'rm' ? 'RM' : product._source === 'asm' ? 'ASM' : product._source === 'nv' ? 'NV' : '';
 
     const div = document.createElement('div');
     div.className = 'cart-item';
     div.innerHTML = `
       <div class="cart-item-info">
-        <div class="cart-item-header">
-          <span class="cart-item-code">${escHtml(String(codigo))}</span>
-          ${sourceTag ? `<span class="cart-item-provider">[${escHtml(sourceTag)}]</span>` : ''}
-          <span class="cart-item-desc">${escHtml(String(desc))}</span>
-          <span class="cart-item-marca">${escHtml(marca)}</span>
-        </div>
+        <span class="cart-item-code">${sourceTag ? `<small style="opacity:.5">[${escHtml(sourceTag)}]</small> ` : ''}${escHtml(String(codigo))}</span>
+        <div class="cart-item-desc" title="${escHtml(String(desc))}">${escHtml(String(desc))}</div>
+        <div class="cart-item-sub">${escHtml(marca)} · $${fmtPrice(pVenta)}</div>
       </div>
       <div class="cart-item-controls">
         <div class="qty-control">
@@ -489,8 +396,8 @@ function updateCartUI() {
           <button class="qty-btn" data-action="inc" data-key="${escHtml(key)}">+</button>
         </div>
         <span class="cart-item-qty-print print-only">${qty}</span>
-        <span class="cart-item-unit-print print-only">$${formatPrice(pVenta)}</span>
-        <span class="cart-item-price">$${formatPrice(subtotal)}</span>
+        <span class="cart-item-unit-print print-only">$${fmtPrice(pVenta)}</span>
+        <span class="cart-item-price">$${fmtPrice(subtotal)}</span>
         <button class="cart-item-remove" data-key="${escHtml(key)}">
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Quitar
@@ -511,30 +418,30 @@ function updateCartUI() {
     cartItemsList.appendChild(div);
   });
 
-  totalFinal.textContent = `$${formatPrice(totalSum)}`;
+  totalFinal.textContent = `$${fmtPrice(totalSum)}`;
 }
 
 // ── Product Modal ──────────────────────────────────────────────
 function openProductModal(p) {
-  const code       = p.code ?? '—';
-  const name       = p.name ?? p.vehicle ?? '—';
-  const brand      = (p.brand ?? 'Sin marca').toUpperCase();
-  const image      = p.image ?? '';
-  const precioIva  = p.precioIva ?? 0;
-  const precioCosto = p.precioCosto ?? 0;
-  const precioVenta = p.precioVenta ?? p.price ?? 0;
+  const codigo      = p.codigo      ?? '—';
+  const desc        = p.descripcion ?? p.nombre      ?? '—';
+  const marca       = p.marca       ?? p.marcaName ?? '—';
+  const rubro       = p.categoria   ?? p.rubro ?? p.rubroName ?? '—';
+  const foto        = p.foto        ?? '';
+  const precioLista = null;
+  const costo       = null;
+  const precioVenta = p.precioVenta ?? null;
 
-  productModalCode.textContent  = String(code);
-  productModalName.textContent  = String(name);
-  productModalProvider.textContent = 'ASM';
-  productModalAplicacion.textContent = String(name);
-  productModalMarca.textContent = String(brand);
-  productModalLista.textContent = `$${formatPrice(precioIva)}`;
-  productModalCosto.textContent = `$${formatPrice(precioCosto)}`;
-  productModalVenta.textContent = `$${formatPrice(precioVenta)}`;
+  productModalCode.textContent  = String(codigo);
+  productModalName.textContent  = String(desc);
+  productModalMarca.textContent = String(marca);
+  productModalRubro.textContent = String(rubro);
+  productModalLista.textContent = precioLista != null ? `$${fmtPrice(precioLista)}` : '—';
+  productModalCosto.textContent = costo       != null ? `$${fmtPrice(costo)}`       : '—';
+  productModalVenta.textContent = precioVenta != null ? `$${fmtPrice(precioVenta)}` : '—';
 
-  if (image) {
-    productModalImg.src = image;
+  if (foto) {
+    productModalImg.src = foto;
     productModalImg.style.display = '';
     productModalNoPhoto.classList.remove('visible');
   } else {
@@ -600,13 +507,11 @@ btnImprimir.addEventListener('click', () => {
 });
 
 // ── Helpers ───────────────────────────────────────────────────
+function fmtPrice(val) {
+  return Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function formatPrice(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return '0,00';
-  return num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function setLoading(on) {
   btnBuscar.disabled = on;
@@ -622,6 +527,6 @@ function hideError() { errorSection.style.display = 'none'; }
 function showError(msg) { errorMsg.textContent = msg; errorSection.style.display = ''; }
 
 // ── Start ─────────────────────────────────────────────────────
-loadRubros();
+init();
 loadCart();
 updateCartUI();

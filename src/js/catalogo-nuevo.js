@@ -5,6 +5,10 @@ const CART_STORAGE_KEY = 'ov_presupuesto';
 const rubroSelect        = document.getElementById('rubro');
 const terminoInput       = document.getElementById('termino');
 const terminoError       = document.getElementById('termino-error');
+const terminoBadge       = document.getElementById('termino-badge');
+const carBrandSelect     = document.getElementById('car-brand');
+const carModelSelect     = document.getElementById('car-model');
+const carModelError      = document.getElementById('car-model-error');
 const btnBuscar          = document.getElementById('btn-buscar');
 const btnLimpiar         = document.getElementById('btn-limpiar');
 const loader             = document.getElementById('loader');
@@ -98,6 +102,24 @@ applyTheme(localStorage.getItem('theme') || 'light');
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
   loadRubros();
+  loadCars();
+}
+
+async function loadCars() {
+  try {
+    const res = await fetch(`${API_BASE}/cars?onlyEnabled=true`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    data.brands.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      opt.textContent = b.name;
+      opt.dataset.models = JSON.stringify(b.models);
+      carBrandSelect.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('Error al cargar marcas de autos:', e);
+  }
 }
 
 async function loadRubros() {
@@ -116,6 +138,51 @@ async function loadRubros() {
   }
 }
 
+// ── Mutual exclusión brand/model ↔ termino ────────────────────────────────────
+carBrandSelect.addEventListener('change', () => {
+  const brandOpt = carBrandSelect.options[carBrandSelect.selectedIndex];
+  const hasBrand = !!carBrandSelect.value;
+
+  // Limpiar modelo
+  carModelSelect.innerHTML = '';
+  if (!hasBrand) {
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Seleccioná una marca primero';
+    carModelSelect.appendChild(placeholder);
+    carModelSelect.disabled = true;
+    // Liberar termino si no hay modelo
+    terminoInput.disabled = false;
+    terminoBadge.textContent = 'Requerido';
+    terminoBadge.className = 'required-badge';
+  } else {
+    const models = JSON.parse(brandOpt.dataset.models || '[]');
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Seleccioná un modelo';
+    carModelSelect.appendChild(placeholder);
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name;
+      carModelSelect.appendChild(opt);
+    });
+    carModelSelect.disabled = false;
+    // Bloquear termino
+    terminoInput.disabled = true;
+    terminoInput.value = '';
+    terminoInput.classList.remove('has-error');
+    terminoError.classList.remove('visible');
+    terminoBadge.textContent = 'Opcional';
+    terminoBadge.className = 'opt-badge';
+  }
+  carModelError.classList.remove('visible');
+});
+
+carModelSelect.addEventListener('change', () => {
+  carModelError.classList.remove('visible');
+});
+
 // ── Validación ─────────────────────────────────────────────────────────────────
 function validateTermino() {
   const val = terminoInput.value.trim();
@@ -129,9 +196,20 @@ function validateTermino() {
   return true;
 }
 terminoInput.addEventListener('input', () => {
-  if (terminoInput.value.trim()) {
+  const hasText = !!terminoInput.value.trim();
+  if (hasText) {
     terminoInput.classList.remove('has-error');
     terminoError.classList.remove('visible');
+    // Bloquear brand/model
+    carBrandSelect.disabled = true;
+    carModelSelect.disabled = true;
+    carBrandSelect.value = '';
+    carModelSelect.innerHTML = '<option value="">Seleccioná una marca primero</option>';
+    carModelError.classList.remove('visible');
+  } else {
+    // Liberar brand/model
+    carBrandSelect.disabled = false;
+    if (!carBrandSelect.value) carModelSelect.disabled = true;
   }
 });
 terminoInput.addEventListener('keydown', e => { if (e.key === 'Enter') btnBuscar.click(); });
@@ -143,13 +221,41 @@ pageSizeSelect.addEventListener('change', () => {
 
 // ── Buscar ─────────────────────────────────────────────────────────────────────
 btnBuscar.addEventListener('click', async () => {
-  if (!validateTermino()) return;
+  const termino  = terminoInput.value.trim();
+  const modelVal = carModelSelect.value.trim();
+  const brandVal = carBrandSelect.value;
+  const rubroId  = rubroSelect.value;
 
-  const termino = terminoInput.value.trim();
-  const rubroId = rubroSelect.value;
+  // Determinar modo
+  const modoTexto = !carBrandSelect.disabled && !brandVal && !modelVal && termino;
+  const modoCar   = !terminoInput.disabled && !termino && modelVal;
+  const modoCar2  = terminoInput.disabled && modelVal;  // brand seleccionada bloquea termino
+
+  const usarTexto = !!termino && !brandVal;
+  const usarCar   = !!modelVal;
+
+  if (!usarTexto && !usarCar) {
+    // Sin ningún dato útil
+    if (brandVal && !modelVal) {
+      carModelError.classList.add('visible');
+      return;
+    }
+    if (!terminoInput.disabled) {
+      terminoInput.classList.add('has-error');
+      terminoError.classList.add('visible');
+    }
+    return;
+  }
+
+  if (usarCar && brandVal && !modelVal) {
+    carModelError.classList.add('visible');
+    return;
+  }
+
+  const codigoAuto = usarCar ? modelVal.toLowerCase() : termino;
 
   const requestBody = {
-    codigoAuto: termino,
+    codigoAuto,
     rubroId: rubroId ? parseInt(rubroId) : ""
   };
 
@@ -171,7 +277,13 @@ btnBuscar.addEventListener('click', async () => {
 
     resultsCount.textContent = `${totalProductos} producto${totalProductos !== 1 ? 's' : ''}`;
 
-    const parts = [`"${termino}"`];
+    const parts = [];
+    if (usarCar) {
+      const brandName = carBrandSelect.options[carBrandSelect.selectedIndex]?.textContent ?? brandVal;
+      parts.push(`${brandName} · ${modelVal}`);
+    } else {
+      parts.push(`"${termino}"`);
+    }
     if (rubroId) {
       const opt = rubroSelect.querySelector(`option[value="${rubroId}"]`);
       parts.push(`rubro: ${opt ? opt.textContent : rubroId}`);
@@ -201,8 +313,16 @@ btnBuscar.addEventListener('click', async () => {
 btnLimpiar.addEventListener('click', () => {
   rubroSelect.value = '';
   terminoInput.value = '';
+  terminoInput.disabled = false;
   terminoInput.classList.remove('has-error');
   terminoError.classList.remove('visible');
+  terminoBadge.textContent = 'Requerido';
+  terminoBadge.className = 'required-badge';
+  carBrandSelect.value = '';
+  carBrandSelect.disabled = false;
+  carModelSelect.innerHTML = '<option value="">Seleccioná una marca primero</option>';
+  carModelSelect.disabled = true;
+  carModelError.classList.remove('visible');
   allProducts = [];
   currentPage = 1;
   hideResults();

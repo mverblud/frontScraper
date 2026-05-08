@@ -281,8 +281,31 @@ body {
 
 /* ═══ FILTERS ════════════════════════════════════════════════ */
 .filters-grid {
-  display: grid; grid-template-columns: 2fr 1fr 1fr;
+  display: grid; grid-template-columns: 2.1fr 1fr 1fr 1fr;
   gap: 16px; margin-bottom: 20px;
+}
+.filters-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 4px 0 16px;
+  color: var(--text-muted);
+}
+.filters-divider::before,
+.filters-divider::after {
+  content: ''; flex: 1;
+  border-top: 1px solid var(--border);
+}
+.filters-divider span {
+  font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  white-space: nowrap;
+}
+select:disabled {
+  opacity: 0.45; cursor: not-allowed;
+}
+input[type="text"]:disabled {
+  opacity: 0.45; cursor: not-allowed;
+  border-color: var(--border);
+  box-shadow: none;
 }
 .field-group { display: flex; flex-direction: column; gap: 6px; }
 

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3005';
+const API_BASE = window.ENV.SADAR_BASE;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const buscarInput        = document.getElementById('buscar-codigo');

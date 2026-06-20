@@ -35,8 +35,7 @@ const productModalCode    = document.getElementById('product-modal-code');
 const productModalName    = document.getElementById('product-modal-name');
 const productModalMarca   = document.getElementById('product-modal-marca');
 const productModalRubro   = document.getElementById('product-modal-rubro');
-const productModalLista   = document.getElementById('product-modal-lista');
-const productModalCosto   = document.getElementById('product-modal-costo');
+const productModalFuente  = document.getElementById('product-modal-fuente');
 const productModalVenta   = document.getElementById('product-modal-venta');
 const productModalAdd     = document.getElementById('product-modal-add');
 
@@ -82,10 +81,38 @@ function normalizeProduct(p) {
     nombre: p.descripcion ?? p.nombre ?? '—',
     marca: p.marca ?? p.marcaName ?? '—',
     rubro: p.categoria ?? p.rubro ?? p.rubroName ?? '—',
-    foto: p.foto ?? '',
-    precioVenta: p.precioVenta ?? p.precioSugerido ?? p.precio ?? 0,
-    _source: 'nv'
+    foto: p.imagen ?? p.foto ?? '',
+    precioVenta: p.precio ?? p.precioVenta ?? p.precioSugerido ?? 0,
+    _source: getSourceKey(p)
   };
+}
+
+function getSourceKey(p) {
+  const rawSource = String(
+    p._source ?? p.source ?? p.fuente ?? p.origen ?? p.provider ?? p.proveedor ?? ''
+  ).trim().toLowerCase();
+
+  if (rawSource.includes('ramos')) return 'rm';
+  if (rawSource.includes('rm')) return 'rm';
+  if (rawSource.includes('asm')) return 'asm';
+  return 'nv';
+}
+
+function getSourceLabel(sourceKey) {
+  if (sourceKey === 'rm') return 'RM';
+  if (sourceKey === 'asm') return 'ASM';
+  return 'NV';
+}
+
+function getBrandColorClass(brandName) {
+  const normalized = String(brandName ?? 'sin-marca').trim().toLowerCase();
+  let hash = 0;
+
+  for (let i = 0; i < normalized.length; i++) {
+    hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0;
+  }
+
+  return `brand-palette-${hash % 8}`;
 }
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
@@ -345,16 +372,15 @@ function renderPage() {
     const codigo      = p.codigo      ?? '—';
     const desc        = p.descripcion ?? p.nombre ?? '—';
     const marca       = p.marca ?? p.marcaName ?? '—';
+    const brandClass  = getBrandColorClass(marca);
     const rubro       = p.categoria ?? p.rubro ?? p.rubroName ?? '—';
-    const foto        = p.foto ?? '';
-    const precioLista = null;
-    const costo       = null;
-    const precioVenta = p.precioVenta ?? null;
+    const sourceKey   = getSourceKey(p);
+    const sourceLabel = getSourceLabel(sourceKey);
+    const foto        = p.imagen ?? p.foto ?? '';
+    const precioVenta = p.precio ?? p.precioVenta ?? null;
 
-    const precioListaStr = precioLista != null ? fmtPrice(precioLista) : '—';
-    const costoStr       = costo != null ? fmtPrice(costo) : '—';
     const precioVentaStr = precioVenta != null ? fmtPrice(precioVenta) : '—';
-    const cartKey = `nv:${codigo}`;
+    const cartKey = `${sourceKey}:${codigo}`;
     const inCart  = !!cart[cartKey];
 
     tr.innerHTML = `
@@ -363,10 +389,9 @@ function renderPage() {
       </td>
       <td><span class="td-code">${escHtml(String(codigo))}</span></td>
       <td class="td-aplicacion">${escHtml(String(desc))}</td>
-      <td class="td-marca"><span>${escHtml(String(marca))}</span></td>
+      <td class="td-marca"><span class="brand-badge ${escHtml(brandClass)}">${escHtml(String(marca))}</span></td>
       <td class="td-rubro"><span>${escHtml(String(rubro))}</span></td>
-      <td class="td-precio-lista"><span class="price-symbol">$</span>${precioListaStr}</td>
-      <td class="td-costo"><span class="price-symbol">$</span>${costoStr}</td>
+      <td class="td-fuente"><span class="source-badge source-${escHtml(sourceKey)}">${escHtml(sourceLabel)}</span></td>
       <td class="td-precio-venta"><span class="price-symbol">$</span>${precioVentaStr}</td>
       <td class="td-add">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
@@ -443,7 +468,7 @@ function buildPageRange(current, total) {
 
 function addToCart(product) {
   const normalized = normalizeProduct(product);
-  const key = `nv:${normalized.codigo}`;
+  const key = `${normalized._source}:${normalized.codigo}`;
   if (cart[key]) {
     cart[key].qty += 1;
   } else {
@@ -546,18 +571,20 @@ function openProductModal(p) {
   const codigo      = p.codigo      ?? '—';
   const desc        = p.descripcion ?? p.nombre      ?? '—';
   const marca       = p.marca       ?? p.marcaName ?? '—';
+  const brandClass  = getBrandColorClass(marca);
   const rubro       = p.categoria   ?? p.rubro ?? p.rubroName ?? '—';
-  const foto        = p.foto        ?? '';
-  const precioLista = null;
-  const costo       = null;
-  const precioVenta = p.precioVenta ?? null;
+  const sourceKey   = getSourceKey(p);
+  const sourceLabel = getSourceLabel(sourceKey);
+  const foto        = p.imagen      ?? p.foto ?? '';
+  const precioVenta = p.precio      ?? p.precioVenta ?? null;
 
   productModalCode.textContent  = String(codigo);
   productModalName.textContent  = String(desc);
   productModalMarca.textContent = String(marca);
+  productModalMarca.className = `product-modal-tag-value brand-badge ${brandClass}`;
   productModalRubro.textContent = String(rubro);
-  productModalLista.textContent = precioLista != null ? `$${fmtPrice(precioLista)}` : '—';
-  productModalCosto.textContent = costo       != null ? `$${fmtPrice(costo)}`       : '—';
+  productModalFuente.textContent = sourceLabel;
+  productModalFuente.className = `product-modal-tag-value source-badge source-${sourceKey}`;
   productModalVenta.textContent = precioVenta != null ? `$${fmtPrice(precioVenta)}` : '—';
 
   if (foto) {

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3001';
+const API_BASE = window.ENV.RM_BASE;
 
 // ── Helpers ───────────────────────────────────────────────────
 function escHtml(str) {

@@ -1,6 +1,6 @@
 import { RM_CONFIG } from '../config/config.js';
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = window.ENV.RM_BASE;
 const CART_STORAGE_KEY = 'ov_presupuesto';
 
 const RM_USERNAME  = RM_CONFIG.USERNAME;

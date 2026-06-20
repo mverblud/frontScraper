@@ -1,6 +1,6 @@
 import { ASM_CONFIG } from '../config/config.js';
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = window.ENV.ASM_BASE;
 const CART_STORAGE_KEY = 'ov_presupuesto';
 
 // ── Constantes de autenticación (desde config.js) ───────────────────────────────

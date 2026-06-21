@@ -1,4 +1,4 @@
-const API_BASE = window.ENV.SADAR_BASE;
+const API_BASE = window.ENV.PRODUCTOS_BFF;
 const CART_STORAGE_KEY = 'ov_presupuesto';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
@@ -299,7 +299,11 @@ btnBuscar.addEventListener('click', async () => {
     if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
     const data = await res.json();
 
-    allProducts = data.productos ?? [];
+    allProducts = (data.productos ?? []).sort((a, b) =>
+      String(a.marca ?? a.marcaName ?? '').localeCompare(
+        String(b.marca ?? b.marcaName ?? ''), 'es'
+      )
+    );
     const totalProductos = data.totalProductos ?? allProducts.length;
 
     resultsCount.textContent = `${totalProductos} producto${totalProductos !== 1 ? 's' : ''}`;

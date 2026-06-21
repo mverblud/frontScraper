@@ -1,11 +1,5 @@
-import { RM_CONFIG } from '../config/config.js';
-
-const API_BASE = window.ENV.RM_BASE;
+const API_BASE = window.ENV.PRODUCTOS_BFF;
 const CART_STORAGE_KEY = 'ov_presupuesto';
-
-const RM_USERNAME  = RM_CONFIG.USERNAME;
-const RM_PASSWORD  = RM_CONFIG.PASSWORD;
-const RM_TOKEN_KEY = RM_CONFIG.TOKEN_KEY;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const marcaSelect        = document.getElementById('marca');
@@ -306,24 +300,6 @@ pageSizeSelect.addEventListener('change', () => {
   renderPage();
 });
 
-// ── Autenticación RM ─────────────────────────────────────────────────────────
-async function getRmToken() {
-  const cached = sessionStorage.getItem(RM_TOKEN_KEY);
-  if (cached) return cached;
-
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: RM_USERNAME, password: RM_PASSWORD })
-  });
-
-  if (!res.ok) throw new Error(`No se pudo autenticar con el servidor RM (HTTP ${res.status}).`);
-
-  const { token } = await res.json();
-  sessionStorage.setItem(RM_TOKEN_KEY, token);
-  return token;
-}
-
 // ── Buscar ─────────────────────────────────────────────────────────────────────
 btnBuscar.addEventListener('click', async () => {
   if (!validateTermino()) return;
@@ -344,21 +320,12 @@ btnBuscar.addEventListener('click', async () => {
   hideError();
 
   try {
-    const token = await getRmToken();
-
-    const res = await fetch(`${API_BASE}/scraper/productos`, {
+    const res = await fetch(`${API_BASE}/productos/ramos`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
-    if (res.status === 401) {
-      sessionStorage.removeItem(RM_TOKEN_KEY);
-      throw new Error('Sesión expirada. Por favor, recargue la página.');
-    }
     if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
     const data = await res.json();
     

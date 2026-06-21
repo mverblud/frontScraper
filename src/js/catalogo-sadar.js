@@ -1,4 +1,4 @@
-const API_BASE = window.ENV.SADAR_BASE;
+const API_BASE = window.ENV.PRODUCTOS_BFF;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const buscarInput        = document.getElementById('buscar-codigo');

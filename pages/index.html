@@ -7,51 +7,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../src/styles/style.css" />
+  <!-- Anti-flash: aplica estado colapsado y tema antes de renderizar -->
+  <script>
+    (function () {
+      if (localStorage.getItem('ov_sidebar_collapsed') === 'true') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+      var theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="../src/config/env.js"></script>
+  <script src="../src/js/auth.js" data-guard></script>
 </head>
 <body>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-mark">
-        <img src="../images/cRecurso%204@4x.png" alt="Logo OV Suspension" class="logo-mark-img" />
-      </div>
-      <div class="logo-text">
-        <span class="logo-name">OV Suspensión</span>
-        <span class="logo-sub">Sistema de Gestión</span>
-      </div>
-    </div>
-
-    <nav class="sidebar-nav">
-      <div class="nav-section-label">Principal</div>
-      <a class="nav-item active" href="index.html">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Catalogo RM
-      </a>
-      <a class="nav-item" href="catalogo-asm.html">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 5.5h6M5 8h6M5 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Catálogo ASM
-      </a>
-      <a class="nav-item" href="catalogo-nuevo.html">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Catálogo Nuevo
-      </a>
-      <a class="nav-item" href="catalogo-sadar.html">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 5.5h5M4 8h8M4 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Catalogo SADAR
-      </a>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="user-info">
-        <div class="user-avatar">OV</div>
-        <div class="user-details">
-          <span class="user-name">Marcos Verblud</span>
-          <span class="user-role">Administrador</span>
-        </div>
-      </div>
-    </div>
-  </aside>
+  <!-- El sidebar es inyectado por sidebar.js -->
 
   <!-- MAIN LAYOUT -->
   <div class="layout">
@@ -66,9 +37,9 @@
         </div>
       </div>
       <div class="topbar-right">
-        <div class="topbar-badge">
+        <div class="topbar-badge badge-checking">
           <span class="status-dot"></span>
-          API Conectada
+          Verificando…
         </div>
         <div class="topbar-source">Source: <strong>RM</strong></div>
 
@@ -393,7 +364,8 @@
     </div>
   </div>
 
-  <script src="../src/config/env.js"></script>
+  <script src="../src/js/sidebar.js" defer></script>
+  <script src="../src/js/health.js" defer></script>
   <script type="module" src="../src/js/app.js"></script>
 </body>
 </html>

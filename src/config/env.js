@@ -4,7 +4,7 @@
  * Cambiar APP_ENV a 'prod' para apuntar al BFF productivo.
  * Esta es la ÚNICA línea que hay que editar para alternar entorno.
  */
-const APP_ENV = 'prod'; // 'dev' | 'prod'
+const APP_ENV = 'dev'; // 'dev' | 'prod'
 
 const ENVIRONMENTS = {
   dev:  { PRODUCTOS_BFF: 'http://localhost:3005' },

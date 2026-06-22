@@ -1,5 +1,6 @@
 const API_BASE = window.ENV.PRODUCTOS_BFF;
-const CART_STORAGE_KEY = 'ov_presupuesto';
+const CART_STORAGE_KEY    = 'ov_presupuesto';
+const HIDDEN_COLS_KEY     = 'ov_nv_hidden_cols';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const rubroSelect        = document.getElementById('rubro');
@@ -65,10 +66,105 @@ const btnClearCart   = document.getElementById('btn-clear-cart');
 // Theme
 const themeToggle = document.getElementById('theme-toggle');
 
+// ── Configuración de columnas ─────────────────────────────────────────────────
+// Fuente de verdad para thead, data-col, orden y visibilidad.
+const COLUMNS = [
+  {
+    key: 'foto', label: 'Foto', align: 'center',
+    sortable: false, hideable: true
+  },
+  {
+    key: 'codigo', label: 'Código', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.codigo ?? '')
+  },
+  {
+    key: 'aplicacion', label: 'Aplicación', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.aplicacion ?? '')
+  },
+  {
+    key: 'marca', label: 'Marca', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.marca ?? p.marcaName ?? '')
+  },
+  {
+    key: 'rubro', label: 'Rubro', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.rubro ?? '')
+  },
+  {
+    key: 'fuente', label: 'Fuente', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => getSourceKey(p)
+  },
+  {
+    key: 'precio-lista', label: 'Precio lista', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.precioLista ?? null
+  },
+  {
+    key: 'iva-pct', label: 'IVA(%)', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.iva ?? null
+  },
+  {
+    key: 'iva-monto', label: 'IVA($)', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.montoIVA ?? null
+  },
+  {
+    key: 'desc-pct', label: 'Desc.(%)', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.descuento ?? null
+  },
+  {
+    key: 'costo-neto', label: 'Costo Neto', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.costoNeto ?? null
+  },
+  {
+    key: 'costo-iva', label: 'Costo IVA', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.costoIVA ?? null
+  },
+  {
+    key: 'margen', label: 'Margen', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.margen ?? null
+  },
+  {
+    key: 'p-sugerido', label: 'P.sugerido', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.precioSugerido ?? null
+  },
+  {
+    key: 'ganancia', label: 'Ganancia', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => {
+      const pv = p.precioSugerido ?? null;
+      const ci = p.costoIVA      ?? null;
+      return (pv != null && ci != null) ? Number(pv) - Number(ci) : null;
+    }
+  },
+  {
+    key: 'agregar', label: 'Agregar', align: 'center',
+    sortable: false, hideable: false
+  }
+];
+
+// Flecha SVG inline reutilizable en el <th>
+const SORT_ARROWS_SVG = `<svg class="sort-arrows" width="8" height="12" viewBox="0 0 8 12" fill="none" aria-hidden="true"><path class="arr-up" d="M4 1L1 5h6L4 1z"/><path class="arr-down" d="M4 11L1 7h6L4 11z"/></svg>`;
+
 // ── Estado ────────────────────────────────────────────────────────────────────
 let allProducts = [];
 let currentPage = 1;
 let pageSize    = parseInt(pageSizeSelect.value);
+
+let sortKey = 'marca';
+let sortDir = 'asc';
+
+let hiddenCols = new Set();
 
 let cart = {};
 
@@ -81,6 +177,17 @@ function loadCart() {
     const raw = localStorage.getItem(CART_STORAGE_KEY);
     if (raw) cart = JSON.parse(raw);
   } catch (_) { cart = {}; }
+}
+
+// ── Persistencia columnas ocultas ──────────────────────────────────────────────
+function saveHiddenCols() {
+  try { localStorage.setItem(HIDDEN_COLS_KEY, JSON.stringify([...hiddenCols])); } catch (_) {}
+}
+function loadHiddenCols() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_COLS_KEY);
+    if (raw) hiddenCols = new Set(JSON.parse(raw));
+  } catch (_) { hiddenCols = new Set(); }
 }
 
 // ── Normalizar producto ───────────────────────────────────────────────────────
@@ -135,8 +242,128 @@ themeToggle.addEventListener('click', () => {
 });
 applyTheme(localStorage.getItem('theme') || 'light');
 
+// ── Encabezado de tabla (generado desde COLUMNS) ───────────────────────────────
+function renderTableHead() {
+  const row = document.getElementById('products-head-row');
+  row.innerHTML = '';
+
+  COLUMNS.forEach(col => {
+    const th = document.createElement('th');
+    th.dataset.col = col.key;
+
+    // Clase de alineación
+    if (col.align === 'num')    th.classList.add('th-num');
+    else if (col.align === 'center') th.classList.add('th-center');
+
+    if (col.sortable) {
+      th.classList.add('th-sortable');
+      // Estado activo
+      if (sortKey === col.key) {
+        th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+      }
+      th.innerHTML = `<span class="th-inner"><span class="th-label">${col.label}</span>${SORT_ARROWS_SVG}</span>`;
+      th.addEventListener('click', () => setSort(col.key));
+    } else {
+      th.textContent = col.label;
+    }
+
+    row.appendChild(th);
+  });
+}
+
+// ── Ordenamiento ──────────────────────────────────────────────────────────────
+function setSort(key) {
+  if (sortKey === key) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey = key;
+    sortDir = 'asc';
+  }
+  currentPage = 1;
+  sortProducts();
+  renderTableHead();
+  renderPage();
+}
+
+function sortProducts() {
+  const col = COLUMNS.find(c => c.key === sortKey);
+  if (!col || !col.sortable || !col.sortValue) return;
+
+  allProducts.sort((a, b) => {
+    const va = col.sortValue(a);
+    const vb = col.sortValue(b);
+
+    // Nulos / vacíos siempre al final
+    const aNul = va == null || va === '' || va === '—';
+    const bNul = vb == null || vb === '' || vb === '—';
+    if (aNul && bNul) return 0;
+    if (aNul) return 1;
+    if (bNul) return -1;
+
+    let cmp;
+    if (typeof va === 'number' && typeof vb === 'number') {
+      cmp = va - vb;
+    } else {
+      cmp = String(va).localeCompare(String(vb), 'es');
+    }
+
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+}
+
+// ── Visibilidad de columnas ────────────────────────────────────────────────────
+function applyColumnVisibility() {
+  COLUMNS.forEach(col => {
+    if (!col.hideable) return;
+    const hidden = hiddenCols.has(col.key);
+    document.querySelectorAll(`[data-col="${col.key}"]`).forEach(el => {
+      el.style.display = hidden ? 'none' : '';
+    });
+  });
+}
+
+// ── Menú de columnas ──────────────────────────────────────────────────────────
+function initColumnsMenu() {
+  const menu = document.getElementById('columns-menu');
+  const btn  = document.getElementById('btn-columns');
+  if (!menu || !btn) return;
+
+  COLUMNS.filter(c => c.hideable).forEach(col => {
+    const lbl = document.createElement('label');
+    lbl.className = 'col-menu-item';
+
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.checked = !hiddenCols.has(col.key);
+    cb.addEventListener('change', () => {
+      if (cb.checked) hiddenCols.delete(col.key);
+      else            hiddenCols.add(col.key);
+      saveHiddenCols();
+      applyColumnVisibility();
+    });
+
+    lbl.appendChild(cb);
+    lbl.append(` ${col.label}`);
+    menu.appendChild(lbl);
+  });
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
+
+  document.addEventListener('click', e => {
+    if (!menu.contains(e.target) && e.target !== btn) {
+      menu.classList.remove('open');
+    }
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
+  loadHiddenCols();
+  renderTableHead();
+  initColumnsMenu();
   loadRubros();
   loadCars();
 }
@@ -263,10 +490,6 @@ btnBuscar.addEventListener('click', async () => {
   const rubroId  = rubroSelect.value;
 
   // Determinar modo
-  const modoTexto = !carBrandSelect.disabled && !brandVal && !modelVal && termino;
-  const modoCar   = !terminoInput.disabled && !termino && modelVal;
-  const modoCar2  = terminoInput.disabled && modelVal;  // brand seleccionada bloquea termino
-
   const usarTexto = !!termino && !brandVal;
   const usarCar   = !!modelVal;
 
@@ -308,11 +531,10 @@ btnBuscar.addEventListener('click', async () => {
     if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
     const data = await res.json();
 
-    allProducts = (data.productos ?? []).sort((a, b) =>
-      String(a.marca ?? a.marcaName ?? '').localeCompare(
-        String(b.marca ?? b.marcaName ?? ''), 'es'
-      )
-    );
+    allProducts = data.productos ?? [];
+    // Ordenar con el estado de orden actual (por defecto: marca asc)
+    sortProducts();
+
     const totalProductos = data.totalProductos ?? allProducts.length;
 
     resultsCount.textContent = `${totalProductos} producto${totalProductos !== 1 ? 's' : ''}`;
@@ -435,24 +657,24 @@ function renderPage() {
     const inCart  = !!cart[cartKey];
 
     tr.innerHTML = `
-      <td class="td-foto">
+      <td class="td-foto" data-col="foto">
         ${foto ? `<img src="${escHtml(foto)}" alt="Foto del producto" class="product-thumb" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="no-photo">—</span>'}
       </td>
-      <td><span class="td-code">${escHtml(String(codigo))}</span></td>
-      <td class="td-aplicacion">${escHtml(String(desc))}</td>
-      <td class="td-marca"><span class="brand-badge ${escHtml(brandClass)}">${escHtml(String(marca))}</span></td>
-      <td class="td-rubro"><span>${escHtml(String(rubro))}</span></td>
-      <td class="td-fuente"><span class="source-badge source-${escHtml(sourceKey)}">${escHtml(sourceLabel)}</span></td>
-      <td class="td-precio-lista"><span class="price-symbol">$</span>${precioListaStr}</td>
-      <td class="td-percent">${ivaStr}</td>
-      <td class="td-costo-iva"><span class="price-symbol">$</span>${montoIvaStr}</td>
-      <td class="td-percent">${descuentoStr}</td>
-      <td class="td-costo"><span class="price-symbol">$</span>${costoNetoStr}</td>
-      <td class="td-costo-iva"><span class="price-symbol">$</span>${costoIvaStr}</td>
-      <td class="td-percent">${margenStr}</td>
-      <td class="td-precio-venta"><span class="price-symbol">$</span>${precioVentaStr}</td>
-      <td class="td-ganancia">${gananciaCell}</td>
-      <td class="td-add">
+      <td data-col="codigo"><span class="td-code">${escHtml(String(codigo))}</span></td>
+      <td class="td-aplicacion" data-col="aplicacion">${escHtml(String(desc))}</td>
+      <td class="td-marca" data-col="marca"><span class="brand-badge ${escHtml(brandClass)}">${escHtml(String(marca))}</span></td>
+      <td class="td-rubro" data-col="rubro"><span>${escHtml(String(rubro))}</span></td>
+      <td class="td-fuente" data-col="fuente"><span class="source-badge source-${escHtml(sourceKey)}">${escHtml(sourceLabel)}</span></td>
+      <td class="td-precio-lista" data-col="precio-lista"><span class="price-symbol">$</span>${precioListaStr}</td>
+      <td class="td-percent" data-col="iva-pct">${ivaStr}</td>
+      <td class="td-costo-iva" data-col="iva-monto"><span class="price-symbol">$</span>${montoIvaStr}</td>
+      <td class="td-percent" data-col="desc-pct">${descuentoStr}</td>
+      <td class="td-costo" data-col="costo-neto"><span class="price-symbol">$</span>${costoNetoStr}</td>
+      <td class="td-costo-iva" data-col="costo-iva"><span class="price-symbol">$</span>${costoIvaStr}</td>
+      <td class="td-percent" data-col="margen">${margenStr}</td>
+      <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${precioVentaStr}</td>
+      <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
+      <td class="td-add" data-col="agregar">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
           ${inCart
             ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Agregado`
@@ -479,6 +701,9 @@ function renderPage() {
   paginationInfo.innerHTML = `Mostrando <strong>${start + 1}–${end}</strong> de <strong>${total}</strong>`;
   renderPaginationControls(totalPages);
   tableFooter.style.display = total > 0 ? '' : 'none';
+
+  // Aplicar visibilidad después de renderizar filas
+  applyColumnVisibility();
 }
 
 // ── Paginación ────────────────────────────────────────────────────────────────

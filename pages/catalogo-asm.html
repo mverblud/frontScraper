@@ -166,11 +166,17 @@
                 <th class="th-center">Foto</th>
                 <th>Código</th>
                 <th>Aplicación</th>
-                <th>MARCA</th>
-                <th>RUBRO</th>
-                <th class="th-num">Precio Lista</th>
-                <th class="th-num">Costo</th>
-                <th class="th-num">Precio Venta</th>
+                <th>Marca</th>
+                <th>Rubro</th>
+                <th class="th-num">Precio lista</th>
+                <th class="th-num">IVA(%)</th>
+                <th class="th-num">IVA($)</th>
+                <th class="th-num">Desc.(%)</th>
+                <th class="th-num">Costo Neto</th>
+                <th class="th-num">Costo IVA</th>
+                <th class="th-num">Margen</th>
+                <th class="th-num">P.sugerido</th>
+                <th class="th-num">Ganancia</th>
                 <th class="th-center">Stock</th>
                 <th class="th-center">Agregar</th>
               </tr>
@@ -315,18 +321,18 @@
           <span class="product-modal-code" id="product-modal-code"></span>
           <h2 class="product-modal-name" id="product-modal-name"></h2>
         </div>
-        <div class="product-modal-details">
-          <div class="product-modal-detail-row">
-            <span class="product-modal-detail-label">Proveedor</span>
-            <span class="product-modal-detail-value" id="product-modal-provider"></span>
+        <div class="product-modal-tags">
+          <div class="product-modal-tag">
+            <span class="product-modal-tag-label">Marca</span>
+            <span class="product-modal-tag-value" id="product-modal-marca"></span>
           </div>
-          <div class="product-modal-detail-row">
-            <span class="product-modal-detail-label">Aplicación</span>
-            <span class="product-modal-detail-value" id="product-modal-aplicacion"></span>
+          <div class="product-modal-tag">
+            <span class="product-modal-tag-label">Rubro</span>
+            <span class="product-modal-tag-value" id="product-modal-rubro"></span>
           </div>
-          <div class="product-modal-detail-row">
-            <span class="product-modal-detail-label">Marca</span>
-            <span class="product-modal-detail-value" id="product-modal-marca"></span>
+          <div class="product-modal-tag">
+            <span class="product-modal-tag-label">Fuente</span>
+            <span class="product-modal-tag-value" id="product-modal-fuente"></span>
           </div>
         </div>
         <div class="product-modal-prices">
@@ -335,12 +341,42 @@
             <span class="product-modal-price-val" id="product-modal-lista"></span>
           </div>
           <div class="product-modal-price-item">
-            <span class="product-modal-price-label">Costo</span>
+            <span class="product-modal-price-label">Costo IVA</span>
             <span class="product-modal-price-val" id="product-modal-costo"></span>
           </div>
           <div class="product-modal-price-item highlight">
-            <span class="product-modal-price-label">Precio Venta</span>
+            <span class="product-modal-price-label">Precio Sugerido</span>
             <span class="product-modal-price-val" id="product-modal-venta"></span>
+          </div>
+        </div>
+        <div class="product-modal-metrics">
+          <div class="product-modal-metric-item">
+            <span class="product-modal-metric-label">IVA</span>
+            <span class="product-modal-metric-val" id="product-modal-iva"></span>
+          </div>
+          <div class="product-modal-metric-item">
+            <span class="product-modal-metric-label">Descuento</span>
+            <span class="product-modal-metric-val" id="product-modal-descuento"></span>
+          </div>
+          <div class="product-modal-metric-item">
+            <span class="product-modal-metric-label">Monto IVA</span>
+            <span class="product-modal-metric-val" id="product-modal-monto-iva"></span>
+          </div>
+          <div class="product-modal-metric-item">
+            <span class="product-modal-metric-label">Costo Neto</span>
+            <span class="product-modal-metric-val" id="product-modal-costo-neto"></span>
+          </div>
+          <div class="product-modal-metric-item">
+            <span class="product-modal-metric-label">Margen</span>
+            <span class="product-modal-metric-val" id="product-modal-margen"></span>
+          </div>
+          <div class="product-modal-metric-item">
+            <span class="product-modal-metric-label">Ganancia</span>
+            <span class="product-modal-metric-val" id="product-modal-ganancia"></span>
+          </div>
+          <div class="product-modal-metric-item">
+            <span class="product-modal-metric-label">Stock</span>
+            <span class="product-modal-metric-val" id="product-modal-stock"></span>
           </div>
         </div>
         <button class="btn-primary product-modal-add" id="product-modal-add">

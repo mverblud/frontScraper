@@ -36,7 +36,16 @@ const productModalName    = document.getElementById('product-modal-name');
 const productModalMarca   = document.getElementById('product-modal-marca');
 const productModalRubro   = document.getElementById('product-modal-rubro');
 const productModalFuente  = document.getElementById('product-modal-fuente');
+const productModalLista   = document.getElementById('product-modal-lista');
+const productModalCosto   = document.getElementById('product-modal-costo');
 const productModalVenta   = document.getElementById('product-modal-venta');
+const productModalIva     = document.getElementById('product-modal-iva');
+const productModalDesc    = document.getElementById('product-modal-descuento');
+const productModalMontoIva= document.getElementById('product-modal-monto-iva');
+const productModalCostoNeto= document.getElementById('product-modal-costo-neto');
+const productModalMargen  = document.getElementById('product-modal-margen');
+const productModalGanancia= document.getElementById('product-modal-ganancia');
+const productModalStock   = document.getElementById('product-modal-stock');
 const productModalAdd     = document.getElementById('product-modal-add');
 
 // Drawer / carrito
@@ -78,11 +87,11 @@ function loadCart() {
 function normalizeProduct(p) {
   return {
     codigo: p.codigo ?? '—',
-    nombre: p.descripcion ?? p.nombre ?? '—',
-    marca: p.marca ?? p.marcaName ?? '—',
-    rubro: p.categoria ?? p.rubro ?? p.rubroName ?? '—',
-    foto: p.imagen ?? p.foto ?? '',
-    precioVenta: p.precio ?? p.precioVenta ?? p.precioSugerido ?? 0,
+    nombre: p.aplicacion ?? '—',
+    marca: p.marca ?? '—',
+    rubro: p.rubro ?? '—',
+    foto: p.imagen ?? '',
+    precioVenta: p.precioSugerido ?? 0,
     _source: getSourceKey(p)
   };
 }
@@ -373,17 +382,55 @@ function renderPage() {
   productsBody.innerHTML = '';
   slice.forEach(p => {
     const tr = document.createElement('tr');
-    const codigo      = p.codigo      ?? '—';
-    const desc        = p.descripcion ?? p.nombre ?? '—';
-    const marca       = p.marca ?? p.marcaName ?? '—';
+    const codigo      = p.codigo         ?? '—';
+    const desc        = p.aplicacion     ?? '—';
+    const marca       = p.marca          ?? '—';
     const brandClass  = getBrandColorClass(marca);
-    const rubro       = p.categoria ?? p.rubro ?? p.rubroName ?? '—';
+    const rubro       = p.rubro          ?? '—';
     const sourceKey   = getSourceKey(p);
     const sourceLabel = getSourceLabel(sourceKey);
-    const foto        = p.imagen ?? p.foto ?? '';
-    const precioVenta = p.precio ?? p.precioVenta ?? null;
+    const foto        = p.imagen         ?? '';
+    const precioLista = p.precioLista    ?? null;
+    const montoIva    = p.montoIVA       ?? null;
+    const costoNeto   = p.costoNeto      ?? null;
+    const costoIva    = p.costoIVA       ?? null;
+    const precioVenta = p.precioSugerido ?? null;
+    const iva         = p.iva            ?? null;
+    const descuento   = p.descuento      ?? null;
+    const margen      = p.margen         ?? null;
+    const ganancia    = precioVenta != null && costoIva != null
+      ? Number(precioVenta) - Number(costoIva)
+      : null;
 
+    const precioListaStr = precioLista != null ? fmtPrice(precioLista) : '—';
+    const montoIvaStr    = montoIva    != null ? fmtPrice(montoIva)    : '—';
+    const costoNetoStr   = costoNeto   != null ? fmtPrice(costoNeto)   : '—';
     const precioVentaStr = precioVenta != null ? fmtPrice(precioVenta) : '—';
+    const costoIvaStr    = costoIva    != null ? fmtPrice(costoIva)    : '—';
+    const ivaStr         = iva         != null ? fmtPercent(iva)       : '—';
+    const descuentoStr   = descuento   != null ? fmtPercent(descuento) : '—';
+    const margenStr      = margen      != null ? fmtPercent(margen)    : '—';
+    const gananciaStr    = ganancia    != null ? fmtPrice(ganancia)    : '—';
+
+    let gananciaIndicatorClass = 'ganancia-indicator-mid';
+    let gananciaIndicatorTitle = 'Ganancia entre $10.000 y $15.000';
+    let gananciaIndicatorIcon = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6h8M7.5 3.5L10 6 7.5 8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    if (ganancia != null) {
+      if (ganancia > 15000) {
+        gananciaIndicatorClass = 'ganancia-indicator-high';
+        gananciaIndicatorTitle = 'Ganancia mayor a $15.000';
+        gananciaIndicatorIcon = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 10V2M6 2L3.5 4.5M6 2l2.5 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      } else if (ganancia < 10000) {
+        gananciaIndicatorClass = 'ganancia-indicator-low';
+        gananciaIndicatorTitle = 'Ganancia menor a $10.000';
+        gananciaIndicatorIcon = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 2v8M6 10L3.5 7.5M6 10l2.5-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+    }
+
+    const gananciaCell = ganancia != null
+      ? `<span class="ganancia-wrap"><span class="ganancia-indicator ${gananciaIndicatorClass}" title="${gananciaIndicatorTitle}">${gananciaIndicatorIcon}</span><span class="price-symbol">$</span>${gananciaStr}</span>`
+      : '—';
     const cartKey = `${sourceKey}:${codigo}`;
     const inCart  = !!cart[cartKey];
 
@@ -396,7 +443,15 @@ function renderPage() {
       <td class="td-marca"><span class="brand-badge ${escHtml(brandClass)}">${escHtml(String(marca))}</span></td>
       <td class="td-rubro"><span>${escHtml(String(rubro))}</span></td>
       <td class="td-fuente"><span class="source-badge source-${escHtml(sourceKey)}">${escHtml(sourceLabel)}</span></td>
+      <td class="td-precio-lista"><span class="price-symbol">$</span>${precioListaStr}</td>
+      <td class="td-percent">${ivaStr}</td>
+      <td class="td-costo-iva"><span class="price-symbol">$</span>${montoIvaStr}</td>
+      <td class="td-percent">${descuentoStr}</td>
+      <td class="td-costo"><span class="price-symbol">$</span>${costoNetoStr}</td>
+      <td class="td-costo-iva"><span class="price-symbol">$</span>${costoIvaStr}</td>
+      <td class="td-percent">${margenStr}</td>
       <td class="td-precio-venta"><span class="price-symbol">$</span>${precioVentaStr}</td>
+      <td class="td-ganancia">${gananciaCell}</td>
       <td class="td-add">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
           ${inCart
@@ -572,24 +627,39 @@ function updateCartUI() {
 
 // ── Product Modal ──────────────────────────────────────────────
 function openProductModal(p) {
-  const codigo      = p.codigo      ?? '—';
-  const desc        = p.descripcion ?? p.nombre      ?? '—';
-  const marca       = p.marca       ?? p.marcaName ?? '—';
-  const brandClass  = getBrandColorClass(marca);
-  const rubro       = p.categoria   ?? p.rubro ?? p.rubroName ?? '—';
+  const codigo      = p.codigo         ?? '—';
+  const desc        = p.aplicacion     ?? '—';
+  const marca       = p.marca          ?? '—';
+  const rubro       = p.rubro          ?? '—';
   const sourceKey   = getSourceKey(p);
   const sourceLabel = getSourceLabel(sourceKey);
-  const foto        = p.imagen      ?? p.foto ?? '';
-  const precioVenta = p.precio      ?? p.precioVenta ?? null;
+  const foto        = p.imagen         ?? '';
+  const precioLista = p.precioLista    ?? null;
+  const costo       = p.costoIVA       ?? null;
+  const precioVenta = p.precioSugerido ?? null;
+  const iva         = p.iva            ?? null;
+  const descuento   = p.descuento      ?? null;
+  const montoIva    = p.montoIVA       ?? null;
+  const costoIva    = p.costoIVA       ?? null;
+  const margen      = p.margen         ?? null;
+  const ganancia    = precioVenta != null && costoIva != null ? precioVenta - costoIva : null;
+  const stock       = p.stock          ?? null;
 
   productModalCode.textContent  = String(codigo);
   productModalName.textContent  = String(desc);
   productModalMarca.textContent = String(marca);
-  productModalMarca.className = `product-modal-tag-value brand-badge ${brandClass}`;
   productModalRubro.textContent = String(rubro);
   productModalFuente.textContent = sourceLabel;
-  productModalFuente.className = `product-modal-tag-value source-badge source-${sourceKey}`;
+  productModalLista.textContent = precioLista != null ? `$${fmtPrice(precioLista)}` : '—';
+  productModalCosto.textContent = costo       != null ? `$${fmtPrice(costo)}`       : '—';
   productModalVenta.textContent = precioVenta != null ? `$${fmtPrice(precioVenta)}` : '—';
+  productModalIva.textContent   = iva         != null ? fmtPercent(iva)              : '—';
+  productModalDesc.textContent  = descuento   != null ? fmtPercent(descuento)        : '—';
+  productModalMontoIva.textContent = montoIva != null ? `$${fmtPrice(montoIva)}`     : '—';
+  productModalCostoNeto.textContent = p.costoNeto != null ? `$${fmtPrice(p.costoNeto)}` : '—';
+  productModalMargen.textContent   = margen   != null ? fmtPercent(margen)           : '—';
+  productModalGanancia.textContent = ganancia != null ? `$${fmtPrice(ganancia)}`     : '—';
+  productModalStock.textContent    = stock    != null ? String(stock)                : '—';
 
   if (foto) {
     productModalImg.src = foto;
@@ -660,6 +730,9 @@ btnImprimir.addEventListener('click', () => {
 // ── Helpers ───────────────────────────────────────────────────
 function fmtPrice(val) {
   return Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPercent(val) {
+  return `${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
 }
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

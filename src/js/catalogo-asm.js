@@ -95,12 +95,19 @@ const productModalImg     = document.getElementById('product-modal-img');
 const productModalNoPhoto = document.getElementById('product-modal-no-photo');
 const productModalCode    = document.getElementById('product-modal-code');
 const productModalName    = document.getElementById('product-modal-name');
-const productModalProvider = document.getElementById('product-modal-provider');
-const productModalAplicacion = document.getElementById('product-modal-aplicacion');
 const productModalMarca   = document.getElementById('product-modal-marca');
+const productModalRubro   = document.getElementById('product-modal-rubro');
+const productModalFuente  = document.getElementById('product-modal-fuente');
 const productModalLista   = document.getElementById('product-modal-lista');
 const productModalCosto   = document.getElementById('product-modal-costo');
 const productModalVenta   = document.getElementById('product-modal-venta');
+const productModalIva     = document.getElementById('product-modal-iva');
+const productModalDesc    = document.getElementById('product-modal-descuento');
+const productModalMontoIva= document.getElementById('product-modal-monto-iva');
+const productModalCostoNeto= document.getElementById('product-modal-costo-neto');
+const productModalMargen  = document.getElementById('product-modal-margen');
+const productModalGanancia= document.getElementById('product-modal-ganancia');
+const productModalStock   = document.getElementById('product-modal-stock');
 const productModalAdd     = document.getElementById('product-modal-add');
 
 // Drawer / carrito
@@ -145,12 +152,12 @@ function loadCart() {
 // ── Normalizar producto ASM ───────────────────────────────────────────────────
 function normalizeAsmProduct(p) {
   return {
-    codigo: p.code ?? '—',
-    nombre: p.name ?? p.vehicle ?? '—',
-    marca: (p.brand ?? 'Sin marca').toUpperCase(),
-    rubro: p.category ?? '—',
-    foto: p.image ?? '',
-    precioVenta: p.precioVenta ?? p.price ?? 0,
+    codigo: p.codigo ?? '—',
+    nombre: p.aplicacion ?? '—',
+    marca: p.marca ?? 'Sin marca',
+    rubro: p.rubro ?? '—',
+    foto: p.imagen ?? '',
+    precioVenta: p.precioSugerido ?? 0,
     _source: 'asm'
   };
 }
@@ -277,31 +284,75 @@ function renderPage() {
   productsBody.innerHTML = '';
   slice.forEach(p => {
     const tr = document.createElement('tr');
-    const image = p.image ?? '';
-    const code = p.code ?? '—';
-    const category = p.category ?? p.name ?? '—';
-    const brand = (p.brand ? p.brand : 'Sin marca').toUpperCase();
-    const vehicle = p.vehicle ?? '—';
-    const precioIva = p.precioIva ?? 0;
-    const precioCosto = p.precioCosto ?? 0;
-    const precioVenta = p.precioVenta ?? p.price ?? 0;
-    const stock = p.stock ?? 0;
+    const codigo      = p.codigo         ?? '—';
+    const desc        = p.aplicacion     ?? '—';
+    const marca       = (p.marca ?? '—').toUpperCase();
+    const rubro       = p.rubro          ?? '—';
+    const foto        = p.imagen         ?? '';
+    const precioLista = p.precioLista    ?? null;
+    const montoIva    = p.montoIVA       ?? null;
+    const costoNeto   = p.costoNeto      ?? null;
+    const costoIva    = p.costoIVA       ?? null;
+    const precioVenta = p.precioSugerido ?? null;
+    const iva         = p.iva            ?? null;
+    const descuento   = p.descuento      ?? null;
+    const margen      = p.margen         ?? null;
+    const stock       = p.stock          ?? 0;
+    const ganancia    = precioVenta != null && costoIva != null
+      ? Number(precioVenta) - Number(costoIva)
+      : null;
+
+    const precioListaStr = precioLista != null ? formatPrice(precioLista) : '—';
+    const montoIvaStr    = montoIva    != null ? formatPrice(montoIva)    : '—';
+    const costoNetoStr   = costoNeto   != null ? formatPrice(costoNeto)   : '—';
+    const precioVentaStr = precioVenta != null ? formatPrice(precioVenta) : '—';
+    const costoIvaStr    = costoIva    != null ? formatPrice(costoIva)    : '—';
+    const ivaStr         = iva         != null ? fmtPercent(iva)          : '—';
+    const descuentoStr   = descuento   != null ? fmtPercent(descuento)    : '—';
+    const margenStr      = margen      != null ? fmtPercent(margen)       : '—';
+    const gananciaStr    = ganancia    != null ? formatPrice(ganancia)    : '—';
+
+    let gananciaIndicatorClass = 'ganancia-indicator-mid';
+    let gananciaIndicatorTitle = 'Ganancia entre $10.000 y $15.000';
+    let gananciaIndicatorIcon = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6h8M7.5 3.5L10 6 7.5 8.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    if (ganancia != null) {
+      if (ganancia > 15000) {
+        gananciaIndicatorClass = 'ganancia-indicator-high';
+        gananciaIndicatorTitle = 'Ganancia mayor a $15.000';
+        gananciaIndicatorIcon = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 10V2M6 2L3.5 4.5M6 2l2.5 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      } else if (ganancia < 10000) {
+        gananciaIndicatorClass = 'ganancia-indicator-low';
+        gananciaIndicatorTitle = 'Ganancia menor a $10.000';
+        gananciaIndicatorIcon = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 2v8M6 10L3.5 7.5M6 10l2.5-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+    }
+
+    const gananciaCell = ganancia != null
+      ? `<span class="ganancia-wrap"><span class="ganancia-indicator ${gananciaIndicatorClass}" title="${gananciaIndicatorTitle}">${gananciaIndicatorIcon}</span><span class="price-symbol">$</span>${gananciaStr}</span>`
+      : '—';
 
     const stockClass = stock > 0 ? 'stock-ok' : 'stock-zero';
-    const cartKey = `asm:${code}`;
+    const cartKey = `asm:${codigo}`;
     const inCart  = !!cart[cartKey];
 
     tr.innerHTML = `
-      <td style="text-align:center">
-        ${image ? `<img src="${escHtml(String(image))}" alt="${escHtml(String(code))}" class="product-thumb" style="width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;" loading="lazy" />` : '—'}
+      <td class="td-foto">
+        ${foto ? `<img src="${escHtml(String(foto))}" alt="${escHtml(String(codigo))}" class="product-thumb" style="width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;" loading="lazy" />` : '<span class="no-photo">—</span>'}
       </td>
-      <td><span class="td-code">${escHtml(String(code))}</span></td>
-      <td class="td-aplicacion">${escHtml(String(vehicle))}</td>
-      <td class="td-marca"><span>${escHtml(String(brand))}</span></td>
-      <td class="td-rubro"><span>${escHtml(String(category))}</span></td>
-      <td class="td-precio-lista"><span class="price-symbol">$</span>${escHtml(formatPrice(precioIva))}</td>
-      <td class="td-precio-lista"><span class="price-symbol">$</span>${escHtml(formatPrice(precioCosto))}</td>
-      <td class="td-precio-venta"><span class="price-symbol">$</span>${escHtml(formatPrice(precioVenta))}</td>
+      <td><span class="td-code">${escHtml(String(codigo))}</span></td>
+      <td class="td-aplicacion">${escHtml(String(desc))}</td>
+      <td class="td-marca"><span>${escHtml(String(marca))}</span></td>
+      <td class="td-rubro"><span>${escHtml(String(rubro))}</span></td>
+      <td class="td-precio-lista"><span class="price-symbol">$</span>${escHtml(precioListaStr)}</td>
+      <td class="td-percent">${ivaStr}</td>
+      <td class="td-costo-iva"><span class="price-symbol">$</span>${escHtml(montoIvaStr)}</td>
+      <td class="td-percent">${descuentoStr}</td>
+      <td class="td-costo"><span class="price-symbol">$</span>${escHtml(costoNetoStr)}</td>
+      <td class="td-costo-iva"><span class="price-symbol">$</span>${escHtml(costoIvaStr)}</td>
+      <td class="td-percent">${margenStr}</td>
+      <td class="td-precio-venta"><span class="price-symbol">$</span>${escHtml(precioVentaStr)}</td>
+      <td class="td-ganancia">${gananciaCell}</td>
       <td class="td-stock ${stockClass}" style="text-align:center;font-weight:600">${stock}</td>
       <td class="td-add">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
@@ -480,27 +531,52 @@ function updateCartUI() {
   totalFinal.textContent = `$${formatPrice(totalSum)}`;
 }
 
+// ── Helpers de badge ──────────────────────────────────────────
+function getBrandColorClass(brandName) {
+  const normalized = String(brandName ?? 'sin-marca').trim().toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0;
+  }
+  return `brand-palette-${hash % 8}`;
+}
+
 // ── Product Modal ──────────────────────────────────────────────
 function openProductModal(p) {
-  const code       = p.code ?? '—';
-  const name       = p.name ?? p.vehicle ?? '—';
-  const brand      = (p.brand ?? 'Sin marca').toUpperCase();
-  const image      = p.image ?? '';
-  const precioIva  = p.precioIva ?? 0;
-  const precioCosto = p.precioCosto ?? 0;
-  const precioVenta = p.precioVenta ?? p.price ?? 0;
+  const codigo      = p.codigo         ?? '—';
+  const desc        = p.aplicacion     ?? '—';
+  const marca       = (p.marca ?? 'Sin marca').toUpperCase();
+  const foto        = p.imagen         ?? '';
+  const precioLista = p.precioLista    ?? null;
+  const costo       = p.costoIVA       ?? null;
+  const precioVenta = p.precioSugerido ?? null;
+  const iva         = p.iva            ?? null;
+  const descuento   = p.descuento      ?? null;
+  const montoIva    = p.montoIVA       ?? null;
+  const costoIva    = p.costoIVA       ?? null;
+  const margen      = p.margen         ?? null;
+  const rubro       = p.rubro          ?? '—';
+  const ganancia    = precioVenta != null && costoIva != null ? precioVenta - costoIva : null;
+  const stock       = p.stock          ?? null;
 
-  productModalCode.textContent  = String(code);
-  productModalName.textContent  = String(name);
-  productModalProvider.textContent = 'ASM';
-  productModalAplicacion.textContent = String(name);
-  productModalMarca.textContent = String(brand);
-  productModalLista.textContent = `$${formatPrice(precioIva)}`;
-  productModalCosto.textContent = `$${formatPrice(precioCosto)}`;
-  productModalVenta.textContent = `$${formatPrice(precioVenta)}`;
+  productModalCode.textContent  = String(codigo);
+  productModalName.textContent  = String(desc);
+  productModalMarca.textContent = String(marca);
+  productModalRubro.textContent = String(rubro);
+  productModalFuente.textContent = 'ASM';
+  productModalLista.textContent = precioLista != null ? `$${formatPrice(precioLista)}` : '—';
+  productModalCosto.textContent = costo       != null ? `$${formatPrice(costo)}`       : '—';
+  productModalVenta.textContent = precioVenta != null ? `$${formatPrice(precioVenta)}` : '—';
+  productModalIva.textContent   = iva         != null ? fmtPercent(iva)                : '—';
+  productModalDesc.textContent  = descuento   != null ? fmtPercent(descuento)          : '—';
+  productModalMontoIva.textContent = montoIva != null ? `$${formatPrice(montoIva)}`    : '—';
+  productModalCostoNeto.textContent = p.costoNeto != null ? `$${formatPrice(p.costoNeto)}` : '—';
+  productModalMargen.textContent   = margen   != null ? fmtPercent(margen)             : '—';
+  productModalGanancia.textContent = ganancia != null ? `$${formatPrice(ganancia)}`    : '—';
+  productModalStock.textContent    = stock    != null ? String(stock)                  : '—';
 
-  if (image) {
-    productModalImg.src = image;
+  if (foto) {
+    productModalImg.src = foto;
     productModalImg.style.display = '';
     productModalNoPhoto.classList.remove('visible');
   } else {
@@ -573,6 +649,11 @@ function formatPrice(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return '0,00';
   return num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPercent(val) {
+  const num = Number(val);
+  if (!Number.isFinite(num)) return '0%';
+  return `${num.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
 }
 function setLoading(on) {
   btnBuscar.disabled = on;

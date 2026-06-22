@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OV Suspensión · Iniciar sesión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/styles/style.css" />
+  <!-- Anti-flash: aplica tema antes de renderizar -->
+  <script>
+    (function () {
+      var theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="../src/config/env.js"></script>
+  <!-- Sin data-guard: login.js hace la verificación inversa -->
+  <script src="../src/js/auth.js"></script>
+</head>
+<body class="auth-body">
+
+  <div class="auth-screen">
+    <div class="auth-card">
+
+      <!-- Branding -->
+      <div class="auth-logo">
+        <img src="../images/cRecurso%204@4x.png" alt="OV Suspensión" class="auth-logo-img" />
+        <div class="auth-logo-text">
+          <span class="auth-logo-name">OV Suspensión</span>
+          <span class="auth-logo-sub">Sistema de Gestión</span>
+        </div>
+      </div>
+
+      <!-- Card de login -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Iniciar sesión
+          </div>
+        </div>
+        <div class="card-body auth-form-body">
+
+          <!-- Banner de error -->
+          <div class="error-card" id="login-error" style="display:none">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7.5" stroke="#EF4444" stroke-width="1.5"/>
+              <path d="M9 5.5V9.5M9 12h.01" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <p id="login-error-msg">Usuario o contraseña incorrectos.</p>
+          </div>
+
+          <form id="login-form" novalidate>
+
+            <div class="field-group">
+              <label for="username">Usuario</label>
+              <div class="input-wrap">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M2.5 13.5c0-3 2.239-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <input type="text" id="username" name="username"
+                  placeholder="Ingresá tu usuario"
+                  autocomplete="username" />
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="password">Contraseña</label>
+              <div class="input-wrap">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <input type="password" id="password" name="password"
+                  placeholder="Ingresá tu contraseña"
+                  autocomplete="current-password" />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary btn-full" id="btn-login">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9 7H2M6 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 2h2a1 1 0 011 1v8a1 1 0 01-1 1H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <span class="btn-text">Ingresar</span>
+              <span class="btn-loader" id="login-loader" style="display:none">
+                <svg viewBox="0 0 20 20" fill="none">
+                  <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5"
+                    stroke-dasharray="25 25" stroke-linecap="round">
+                    <animateTransform attributeName="transform" type="rotate"
+                      from="0 10 10" to="360 10 10" dur="0.7s" repeatCount="indefinite"/>
+                  </circle>
+                </svg>
+              </span>
+            </button>
+
+          </form>
+
+        </div>
+      </div>
+
+      <!-- Toggle de tema -->
+      <div class="auth-theme-row">
+        <button class="theme-toggle" id="theme-toggle" title="Cambiar tema">
+          <span class="theme-icon-light">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.1 3.1l1.06 1.06M10.84 10.84l1.06 1.06M3.1 11.9l1.06-1.06M10.84 4.16l1.06-1.06"
+                stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Claro
+          </span>
+          <span class="theme-icon-dark">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M12.5 9A6 6 0 015 1.5a6 6 0 100 11A6 6 0 0012.5 9z"
+                stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+            Oscuro
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../src/js/login.js"></script>
+</body>
+</html>

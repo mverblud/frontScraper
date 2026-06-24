@@ -373,13 +373,18 @@ async function loadCars() {
     const res = await fetch(`${API_BASE}/cars?onlyEnabled=true`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    data.brands.forEach(b => {
-      const opt = document.createElement('option');
-      opt.value = b.id;
-      opt.textContent = b.name;
-      opt.dataset.models = JSON.stringify(b.models);
-      carBrandSelect.appendChild(opt);
-    });
+    data.brands
+      .slice()
+      .sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'))
+      .forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.name;
+        opt.dataset.models = JSON.stringify(
+          b.models.slice().sort((x, y) => String(x.name).localeCompare(String(y.name), 'es'))
+        );
+        carBrandSelect.appendChild(opt);
+      });
   } catch (e) {
     console.error('Error al cargar marcas de autos:', e);
   }
@@ -390,6 +395,7 @@ async function loadRubros() {
     const res = await fetch(`${API_BASE}/rubros?soloHabilitados=true`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    data.rubros.sort((a, b) => String(a.rubroNombre).localeCompare(String(b.rubroNombre), 'es'));
     data.rubros.forEach(r => {
       const opt = document.createElement('option');
       opt.value = r.rubroId;

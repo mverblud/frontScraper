@@ -1,5 +1,95 @@
 const API_BASE = window.ENV.PRODUCTOS_BFF;
 const CART_STORAGE_KEY = 'ov_presupuesto';
+const HIDDEN_COLS_KEY  = 'ov_asm_hidden_cols';
+
+// ── Definición de columnas ─────────────────────────────────────────────────────
+const COLUMNS = [
+  {
+    key: 'foto', label: 'Foto', align: 'center',
+    sortable: false, hideable: true
+  },
+  {
+    key: 'codigo', label: 'Código', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.codigo ?? '')
+  },
+  {
+    key: 'aplicacion', label: 'Aplicación', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.aplicacion ?? '')
+  },
+  {
+    key: 'marca', label: 'Marca', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.marca ?? '')
+  },
+  {
+    key: 'rubro', label: 'Rubro', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.rubro ?? '')
+  },
+  {
+    key: 'precio-lista', label: 'Precio lista', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.precioLista ?? null
+  },
+  {
+    key: 'iva-pct', label: 'IVA(%)', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.iva ?? null
+  },
+  {
+    key: 'iva-monto', label: 'IVA($)', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.montoIVA ?? null
+  },
+  {
+    key: 'desc-pct', label: 'Desc.(%)', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.descuento ?? null
+  },
+  {
+    key: 'costo-neto', label: 'Costo Neto', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.costoNeto ?? null
+  },
+  {
+    key: 'costo-iva', label: 'Costo IVA', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.costoIVA ?? null
+  },
+  {
+    key: 'margen', label: 'Margen', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.margen ?? null
+  },
+  {
+    key: 'p-sugerido', label: 'P.sugerido', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => p.precioSugerido ?? null
+  },
+  {
+    key: 'ganancia', label: 'Ganancia', align: 'num',
+    sortable: true, hideable: true,
+    sortValue: p => {
+      const pv = p.precioSugerido ?? null;
+      const ci = p.costoIVA      ?? null;
+      return (pv != null && ci != null) ? Number(pv) - Number(ci) : null;
+    }
+  },
+  {
+    key: 'stock', label: 'Stock', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => p.stock ?? null
+  },
+  {
+    key: 'agregar', label: 'Agregar', align: 'center',
+    sortable: false, hideable: false
+  }
+];
+
+// Flecha SVG inline reutilizable en el <th>
+const SORT_ARROWS_SVG = `<svg class="sort-arrows" width="8" height="12" viewBox="0 0 8 12" fill="none" aria-hidden="true"><path class="arr-up" d="M4 1L1 5h6L4 1z"/><path class="arr-down" d="M4 11L1 7h6L4 11z"/></svg>`;
 
 // ── Categorías ASM ────────────────────────────────────────────────────────────
 const CATEGORIAS = [
@@ -135,6 +225,10 @@ let allProducts = [];
 let currentPage = 1;
 let pageSize    = parseInt(pageSizeSelect.value);
 
+let sortKey = 'marca';
+let sortDir = 'asc';
+let hiddenCols = new Set();
+
 // carrito compartido: { [key]: { product, qty } }
 let cart = {};
 
@@ -250,6 +344,7 @@ btnBuscar.addEventListener('click', async () => {
     } else {
       productsTable.style.display = '';
       noResults.style.display     = 'none';
+      sortProducts();
       renderPage();
     }
   } catch (e) {
@@ -270,6 +365,131 @@ btnLimpiar.addEventListener('click', () => {
   hideResults();
   hideError();
 });
+
+// ── Persistencia columnas ocultas ──────────────────────────────────────────────
+function saveHiddenCols() {
+  try { localStorage.setItem(HIDDEN_COLS_KEY, JSON.stringify([...hiddenCols])); } catch (_) {}
+}
+function loadHiddenCols() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_COLS_KEY);
+    if (raw) hiddenCols = new Set(JSON.parse(raw));
+  } catch (_) { hiddenCols = new Set(); }
+}
+
+// ── Encabezado de tabla (generado desde COLUMNS) ───────────────────────────────
+function renderTableHead() {
+  const row = document.getElementById('products-head-row');
+  row.innerHTML = '';
+
+  COLUMNS.forEach(col => {
+    const th = document.createElement('th');
+    th.dataset.col = col.key;
+
+    if (col.align === 'num')         th.classList.add('th-num');
+    else if (col.align === 'center') th.classList.add('th-center');
+
+    if (col.sortable) {
+      th.classList.add('th-sortable');
+      if (sortKey === col.key) {
+        th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+      }
+      th.innerHTML = `<span class="th-inner"><span class="th-label">${col.label}</span>${SORT_ARROWS_SVG}</span>`;
+      th.addEventListener('click', () => setSort(col.key));
+    } else {
+      th.textContent = col.label;
+    }
+
+    row.appendChild(th);
+  });
+}
+
+// ── Ordenamiento ──────────────────────────────────────────────────────────────
+function setSort(key) {
+  if (sortKey === key) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey = key;
+    sortDir = 'asc';
+  }
+  currentPage = 1;
+  sortProducts();
+  renderTableHead();
+  renderPage();
+}
+
+function sortProducts() {
+  const col = COLUMNS.find(c => c.key === sortKey);
+  if (!col || !col.sortable || !col.sortValue) return;
+
+  allProducts.sort((a, b) => {
+    const va = col.sortValue(a);
+    const vb = col.sortValue(b);
+
+    const aNul = va == null || va === '' || va === '—';
+    const bNul = vb == null || vb === '' || vb === '—';
+    if (aNul && bNul) return 0;
+    if (aNul) return 1;
+    if (bNul) return -1;
+
+    let cmp;
+    if (typeof va === 'number' && typeof vb === 'number') {
+      cmp = va - vb;
+    } else {
+      cmp = String(va).localeCompare(String(vb), 'es');
+    }
+
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+}
+
+// ── Visibilidad de columnas ────────────────────────────────────────────────────
+function applyColumnVisibility() {
+  COLUMNS.forEach(col => {
+    if (!col.hideable) return;
+    const hidden = hiddenCols.has(col.key);
+    document.querySelectorAll(`[data-col="${col.key}"]`).forEach(el => {
+      el.style.display = hidden ? 'none' : '';
+    });
+  });
+}
+
+// ── Menú de columnas ──────────────────────────────────────────────────────────
+function initColumnsMenu() {
+  const menu = document.getElementById('columns-menu');
+  const btn  = document.getElementById('btn-columns');
+  if (!menu || !btn) return;
+
+  COLUMNS.filter(c => c.hideable).forEach(col => {
+    const lbl = document.createElement('label');
+    lbl.className = 'col-menu-item';
+
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.checked = !hiddenCols.has(col.key);
+    cb.addEventListener('change', () => {
+      if (cb.checked) hiddenCols.delete(col.key);
+      else            hiddenCols.add(col.key);
+      saveHiddenCols();
+      applyColumnVisibility();
+    });
+
+    lbl.appendChild(cb);
+    lbl.append(` ${col.label}`);
+    menu.appendChild(lbl);
+  });
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
+
+  document.addEventListener('click', e => {
+    if (!menu.contains(e.target) && e.target !== btn) {
+      menu.classList.remove('open');
+    }
+  });
+}
 
 // ── Render tabla ───────────────────────────────────────────────────────────────
 function renderPage() {
@@ -337,24 +557,24 @@ function renderPage() {
     const inCart  = !!cart[cartKey];
 
     tr.innerHTML = `
-      <td class="td-foto">
+      <td class="td-foto" data-col="foto">
         ${foto ? `<img src="${escHtml(String(foto))}" alt="${escHtml(String(codigo))}" class="product-thumb" style="width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;" loading="lazy" />` : '<span class="no-photo">—</span>'}
       </td>
-      <td><span class="td-code">${escHtml(String(codigo))}</span></td>
-      <td class="td-aplicacion">${escHtml(String(desc))}</td>
-      <td class="td-marca"><span>${escHtml(String(marca))}</span></td>
-      <td class="td-rubro"><span>${escHtml(String(rubro))}</span></td>
-      <td class="td-precio-lista"><span class="price-symbol">$</span>${escHtml(precioListaStr)}</td>
-      <td class="td-percent">${ivaStr}</td>
-      <td class="td-costo-iva"><span class="price-symbol">$</span>${escHtml(montoIvaStr)}</td>
-      <td class="td-percent">${descuentoStr}</td>
-      <td class="td-costo"><span class="price-symbol">$</span>${escHtml(costoNetoStr)}</td>
-      <td class="td-costo-iva"><span class="price-symbol">$</span>${escHtml(costoIvaStr)}</td>
-      <td class="td-percent">${margenStr}</td>
-      <td class="td-precio-venta"><span class="price-symbol">$</span>${escHtml(precioVentaStr)}</td>
-      <td class="td-ganancia">${gananciaCell}</td>
-      <td class="td-stock ${stockClass}" style="text-align:center;font-weight:600">${stock}</td>
-      <td class="td-add">
+      <td data-col="codigo"><span class="td-code">${escHtml(String(codigo))}</span></td>
+      <td class="td-aplicacion" data-col="aplicacion">${escHtml(String(desc))}</td>
+      <td class="td-marca" data-col="marca"><span>${escHtml(String(marca))}</span></td>
+      <td class="td-rubro" data-col="rubro"><span>${escHtml(String(rubro))}</span></td>
+      <td class="td-precio-lista" data-col="precio-lista"><span class="price-symbol">$</span>${escHtml(precioListaStr)}</td>
+      <td class="td-percent" data-col="iva-pct">${ivaStr}</td>
+      <td class="td-costo-iva" data-col="iva-monto"><span class="price-symbol">$</span>${escHtml(montoIvaStr)}</td>
+      <td class="td-percent" data-col="desc-pct">${descuentoStr}</td>
+      <td class="td-costo" data-col="costo-neto"><span class="price-symbol">$</span>${escHtml(costoNetoStr)}</td>
+      <td class="td-costo-iva" data-col="costo-iva"><span class="price-symbol">$</span>${escHtml(costoIvaStr)}</td>
+      <td class="td-percent" data-col="margen">${margenStr}</td>
+      <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${escHtml(precioVentaStr)}</td>
+      <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
+      <td class="td-stock ${stockClass}" data-col="stock" style="text-align:center;font-weight:600">${stock}</td>
+      <td class="td-add" data-col="agregar">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
           ${inCart
             ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Agregado`
@@ -382,6 +602,9 @@ function renderPage() {
   paginationInfo.innerHTML = `Mostrando <strong>${start + 1}–${end}</strong> de <strong>${total}</strong>`;
   renderPaginationControls(totalPages);
   tableFooter.style.display = total > 0 ? '' : 'none';
+
+  // Aplicar visibilidad después de renderizar filas
+  applyColumnVisibility();
 }
 
 // ── Paginación ────────────────────────────────────────────────────────────────
@@ -669,6 +892,9 @@ function hideError() { errorSection.style.display = 'none'; }
 function showError(msg) { errorMsg.textContent = msg; errorSection.style.display = ''; }
 
 // ── Start ─────────────────────────────────────────────────────
+loadHiddenCols();
+renderTableHead();
+initColumnsMenu();
 loadRubros();
 loadCart();
 updateCartUI();

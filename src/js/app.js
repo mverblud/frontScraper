@@ -130,6 +130,14 @@ const productModalGanancia= document.getElementById('product-modal-ganancia');
 const productModalStock   = document.getElementById('product-modal-stock');
 const productModalAdd     = document.getElementById('product-modal-add');
 
+// Catalog modal
+const catalogModalOverlay = document.getElementById('catalog-modal-overlay');
+const catalogModal        = document.getElementById('catalog-modal');
+const catalogModalClose   = document.getElementById('catalog-modal-close');
+const catalogModalCode    = document.getElementById('catalog-modal-code');
+const catalogModalName    = document.getElementById('catalog-modal-name');
+const catalogModalBody    = document.getElementById('catalog-modal-body');
+
 // Drawer / carrito
 const cartBtn        = document.getElementById('cart-btn');
 const cartCount      = document.getElementById('cart-count');
@@ -661,12 +669,19 @@ function renderPage() {
       : '—';
     const cartKey    = `rm:${codigo}`;
     const inCart     = !!cart[cartKey];
+    const catalogo   = p.catalog ?? p.catalogo ?? null;
+    const hasCatalogo = Array.isArray(catalogo) && catalogo.length > 0;
 
     tr.innerHTML = `
       <td class="td-foto" data-col="foto">
         ${foto ? `<img src="${escHtml(foto)}" alt="Foto del producto" class="product-thumb" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="no-photo">—</span>'}
       </td>
-      <td data-col="codigo"><span class="td-code">${escHtml(String(codigo))}</span></td>
+      <td data-col="codigo">
+        ${hasCatalogo
+          ? `<span class="td-code has-catalog" title="Ver catálogo">${escHtml(String(codigo))}</span>`
+          : `<span class="td-code">${escHtml(String(codigo))}</span>`
+        }
+      </td>
       <td class="td-aplicacion" data-col="aplicacion">${escHtml(String(desc))}</td>
       <td class="td-marca" data-col="marca"><span>${escHtml(String(marca))}</span></td>
       <td class="td-rubro" data-col="rubro"><span>${escHtml(String(rubro))}</span></td>
@@ -680,20 +695,32 @@ function renderPage() {
       <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${precioVentaStr}</td>
       <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
       <td class="td-add" data-col="agregar">
-        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
+        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
+                title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
+                aria-label="${inCart ? 'Quitar' : 'Agregar'}">
           ${inCart
-            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Agregado`
-            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Agregar`
+            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
           }
         </button>
       </td>
     `;
 
-    // Guardar referencia al producto en el botón para poder agregarlo
-    tr.querySelector('.btn-add').__product = p;
-    tr.querySelector('.btn-add').addEventListener('click', function() {
-      addToCart(this.__product);
+    // Toggle agregar/quitar del carrito
+    const addBtn = tr.querySelector('.btn-add');
+    addBtn.__product = p;
+    addBtn.addEventListener('click', function() {
+      const key = this.dataset.key;
+      if (cart[key]) removeFromCart(key);
+      else addToCart(this.__product);
     });
+
+    // Código clickeable cuando hay catálogo
+    const codeSpan = tr.querySelector('.td-code.has-catalog');
+    if (codeSpan) {
+      codeSpan.__product = p;
+      codeSpan.addEventListener('click', function() { openCatalogModal(this.__product); });
+    }
 
     // Click en foto → abrir modal
     const thumb = tr.querySelector('.product-thumb');
@@ -825,7 +852,7 @@ function updateCartUI() {
     div.className = 'cart-item';
     div.innerHTML = `
       <div class="cart-item-info">
-        <span class="cart-item-code">${sourceTag ? `<small style="opacity:.5">[${escHtml(sourceTag)}]</small> ` : ''}${escHtml(String(codigo))}</span>
+        <span class="cart-item-code">${sourceTag ? `<span class="cart-item-provider" style="opacity:.5">[${escHtml(sourceTag)}]</span> ` : ''}${escHtml(String(codigo))}</span>
         <div class="cart-item-desc" title="${escHtml(String(desc))}">${escHtml(String(desc))}</div>
         <div class="cart-item-sub">${escHtml(marca)} · $${fmtPrice(pVenta)}</div>
       </div>
@@ -931,11 +958,94 @@ function closeProductModal() {
 
 productModalClose.addEventListener('click', closeProductModal);
 productModalOverlay.addEventListener('click', closeProductModal);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeProductModal(); closeCatalogModal(); }
+});
 productModalAdd.addEventListener('click', function() {
   if (this.__product) addToCart(this.__product);
   closeProductModal();
 });
+
+// ── Catalog Modal ──────────────────────────────────────────────
+function openCatalogModal(p) {
+  const catalogo = p.catalog ?? p.catalogo ?? [];
+  catalogModalCode.textContent = String(p.codigo ?? '—');
+  catalogModalName.textContent = String(p.aplicacion ?? p.nombre ?? '—');
+
+  let html = '';
+
+  catalogo.forEach((item, itemIdx) => {
+    if (catalogo.length > 1) {
+      html += `<div class="cat-item-header">Ítem ${itemIdx + 1}: ${escHtml(String(item.codigo ?? '—'))}</div>`;
+    }
+    const variantes = item.variantes ?? [];
+    variantes.forEach((v, vIdx) => {
+      if (variantes.length > 1) {
+        html += `<div class="cat-variant-header">Variante ${vIdx + 1}</div>`;
+      }
+
+      // Datos básicos de la variante
+      html += `<div class="cat-section-title">Variante</div><div class="cat-rows">`;
+      [
+        ['Posición',    v.posicion],
+        ['Estructura',  v.estructura],
+        ['Aplicación',  v.aplicacion],
+        ['ID Variante', v.variant_id],
+      ].forEach(([lbl, val]) => {
+        html += `<div class="cat-row"><span class="cat-label">${escHtml(lbl)}</span><span class="cat-value">${escHtml(String(val ?? '—'))}</span></div>`;
+      });
+      html += `</div>`;
+
+      // Dimensional
+      if (v.dimensional && typeof v.dimensional === 'object') {
+        const dimLabels = { abierto: 'Abierto (mm)', cerrado: 'Cerrado (mm)', superior: 'Sup. (rosca)', inferior: 'Inf. (rosca)' };
+        html += `<div class="cat-section-title">Dimensional</div><div class="cat-rows">`;
+        Object.entries(v.dimensional).forEach(([key, val]) => {
+          const lbl = dimLabels[key] ?? key;
+          html += `<div class="cat-row"><span class="cat-label">${escHtml(lbl)}</span><span class="cat-value">${escHtml(String(val ?? '—'))}</span></div>`;
+        });
+        html += `</div>`;
+      }
+
+      // Equivalencias
+      const equivs = v.equivalencia ?? v.equivalencias ?? [];
+      if (equivs.length > 0) {
+        html += `<div class="cat-section-title">Equivalencias</div><div class="cat-rows">`;
+        equivs.forEach(eq => {
+          html += `<div class="cat-row"><span class="cat-label">${escHtml(String(eq.marca ?? '—'))}</span><span class="cat-value">${escHtml(String(eq.codigo ?? '—'))}</span></div>`;
+        });
+        html += `</div>`;
+      }
+
+      // Aplicaciones
+      const apps = v.aplicaciones ?? [];
+      if (apps.length > 0) {
+        html += `<div class="cat-section-title">Aplicaciones</div><div class="cat-rows">`;
+        apps.forEach(ap => {
+          const desde = ap.desde ?? '—';
+          const hasta  = ap.hasta != null ? ap.hasta : '…';
+          const tipo   = ap.tipo ? ` (${escHtml(String(ap.tipo))})` : '';
+          html += `<div class="cat-row cat-app-row"><span class="cat-label">${escHtml(String(ap.fabricante ?? '—'))} ${escHtml(String(ap.modelo ?? ''))}</span><span class="cat-value">${escHtml(String(desde))} – ${escHtml(String(hasta))}${tipo}</span></div>`;
+        });
+        html += `</div>`;
+      }
+    });
+  });
+
+  catalogModalBody.innerHTML = html || '<p class="cat-empty">Sin datos de catálogo disponibles.</p>';
+  catalogModalOverlay.classList.add('open');
+  catalogModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCatalogModal() {
+  catalogModalOverlay.classList.remove('open');
+  catalogModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+catalogModalClose.addEventListener('click', closeCatalogModal);
+catalogModalOverlay.addEventListener('click', e => { if (e.target === catalogModalOverlay) closeCatalogModal(); });
 
 // ── Drawer open/close ──────────────────────────────────────────
 cartBtn.addEventListener('click', openDrawer);
@@ -970,6 +1080,15 @@ btnImprimir.addEventListener('click', () => {
     const count = entries.reduce((s, [, i]) => s + i.qty, 0);
     printItemsCount.textContent = `· ${count} producto${count !== 1 ? 's' : ''}`;
   }
+  // Poblar campos de cliente en los spans print-only
+  const nombreInput = document.getElementById('cliente-nombre');
+  const nombrePrint = document.getElementById('cliente-nombre-print');
+  if (nombrePrint) nombrePrint.textContent = nombreInput ? nombreInput.value.trim() : '';
+
+  const telInput = document.getElementById('cliente-tel');
+  const telPrint = document.getElementById('cliente-tel-print');
+  if (telPrint) telPrint.textContent = telInput ? telInput.value.trim() : '';
+
   openDrawer();
   setTimeout(() => window.print(), 100);
 });

@@ -29,6 +29,14 @@
       </svg>`,
     },
     {
+      href: 'catalogo-ov.html',
+      label: 'Catálogo OV',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5 5.5h6M5 8h4M5 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
       href: 'index.html',
       label: 'Catálogo RM',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">

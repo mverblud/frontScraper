@@ -575,18 +575,23 @@ function renderPage() {
       <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
       <td class="td-stock ${stockClass}" data-col="stock" style="text-align:center;font-weight:600">${stock}</td>
       <td class="td-add" data-col="agregar">
-        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
+        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
+                title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
+                aria-label="${inCart ? 'Quitar' : 'Agregar'}">
           ${inCart
-            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Agregado`
-            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Agregar`
+            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
           }
         </button>
       </td>
     `;
 
-    tr.querySelector('.btn-add').__product = p;
-    tr.querySelector('.btn-add').addEventListener('click', function() {
-      addToCart(this.__product);
+    const addBtn = tr.querySelector('.btn-add');
+    addBtn.__product = p;
+    addBtn.addEventListener('click', function() {
+      const key = this.dataset.key;
+      if (cart[key]) removeFromCart(key);
+      else addToCart(this.__product);
     });
 
     // Click en foto → abrir modal
@@ -860,6 +865,15 @@ btnImprimir.addEventListener('click', () => {
     const count = entries.reduce((s, [, i]) => s + i.qty, 0);
     printItemsCount.textContent = `· ${count} producto${count !== 1 ? 's' : ''}`;
   }
+  // Poblar campos de cliente en los spans print-only
+  const nombreInput = document.getElementById('cliente-nombre');
+  const nombrePrint = document.getElementById('cliente-nombre-print');
+  if (nombrePrint) nombrePrint.textContent = nombreInput ? nombreInput.value.trim() : '';
+
+  const telInput = document.getElementById('cliente-tel');
+  const telPrint = document.getElementById('cliente-tel-print');
+  if (telPrint) telPrint.textContent = telInput ? telInput.value.trim() : '';
+
   openDrawer();
   setTimeout(() => window.print(), 100);
 });

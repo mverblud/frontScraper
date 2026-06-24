@@ -49,6 +49,14 @@ const productModalGanancia= document.getElementById('product-modal-ganancia');
 const productModalStock   = document.getElementById('product-modal-stock');
 const productModalAdd     = document.getElementById('product-modal-add');
 
+// Catalog modal
+const catalogModalOverlay      = document.getElementById('catalog-modal-overlay');
+const catalogModal             = document.getElementById('catalog-modal');
+const catalogModalClose        = document.getElementById('catalog-modal-close');
+const catalogModalCode         = document.getElementById('catalog-modal-code');
+const catalogModalVariantsCount= document.getElementById('catalog-modal-variants-count');
+const catalogModalBody         = document.getElementById('catalog-modal-body');
+
 // Drawer / carrito
 const cartBtn        = document.getElementById('cart-btn');
 const cartCount      = document.getElementById('cart-count');
@@ -659,14 +667,21 @@ function renderPage() {
     const gananciaCell = ganancia != null
       ? `<span class="ganancia-wrap"><span class="ganancia-indicator ${gananciaIndicatorClass}" title="${gananciaIndicatorTitle}">${gananciaIndicatorIcon}</span><span class="price-symbol">$</span>${gananciaStr}</span>`
       : '—';
-    const cartKey = `${sourceKey}:${codigo}`;
-    const inCart  = !!cart[cartKey];
+    const cartKey     = `${sourceKey}:${codigo}`;
+    const inCart      = !!cart[cartKey];
+    const catalogo    = p.catalog ?? p.catalogo ?? null;
+    const hasCatalogo = Array.isArray(catalogo) && catalogo.length > 0;
 
     tr.innerHTML = `
       <td class="td-foto" data-col="foto">
         ${foto ? `<img src="${escHtml(foto)}" alt="Foto del producto" class="product-thumb" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="no-photo">—</span>'}
       </td>
-      <td data-col="codigo"><span class="td-code">${escHtml(String(codigo))}</span></td>
+      <td data-col="codigo">
+        <span class="code-with-cat">
+          <span class="td-code">${escHtml(String(codigo))}</span>
+          ${hasCatalogo ? `<button class="btn-cat-link" title="Ver catálogo SADAR"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="10" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>` : ''}
+        </span>
+      </td>
       <td class="td-aplicacion" data-col="aplicacion">${escHtml(String(desc))}</td>
       <td class="td-marca" data-col="marca"><span class="brand-badge ${escHtml(brandClass)}">${escHtml(String(marca))}</span></td>
       <td class="td-rubro" data-col="rubro"><span>${escHtml(String(rubro))}</span></td>
@@ -681,19 +696,32 @@ function renderPage() {
       <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${precioVentaStr}</td>
       <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
       <td class="td-add" data-col="agregar">
-        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}">
+        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
+                title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
+                aria-label="${inCart ? 'Quitar' : 'Agregar'}">
           ${inCart
-            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Agregado`
-            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Agregar`
+            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
           }
         </button>
       </td>
     `;
 
-    tr.querySelector('.btn-add').__product = p;
-    tr.querySelector('.btn-add').addEventListener('click', function() {
-      addToCart(this.__product);
+    // Toggle agregar/quitar
+    const addBtn = tr.querySelector('.btn-add');
+    addBtn.__product = p;
+    addBtn.addEventListener('click', function() {
+      const key = this.dataset.key;
+      if (cart[key]) removeFromCart(key);
+      else addToCart(this.__product);
     });
+
+    // Botón de catálogo SADAR
+    const catBtn = tr.querySelector('.btn-cat-link');
+    if (catBtn) {
+      catBtn.__product = p;
+      catBtn.addEventListener('click', function(e) { e.stopPropagation(); openCatalogModal(this.__product); });
+    }
 
     const thumb = tr.querySelector('.product-thumb');
     if (thumb) {
@@ -820,7 +848,7 @@ function updateCartUI() {
     div.className = 'cart-item';
     div.innerHTML = `
       <div class="cart-item-info">
-        <span class="cart-item-code">${sourceTag ? `<small style="opacity:.5">[${escHtml(sourceTag)}]</small> ` : ''}${escHtml(String(codigo))}</span>
+        <span class="cart-item-code">${sourceTag ? `<span class="cart-item-provider" style="opacity:.5">[${escHtml(sourceTag)}]</span> ` : ''}${escHtml(String(codigo))}</span>
         <div class="cart-item-desc" title="${escHtml(String(desc))}">${escHtml(String(desc))}</div>
         <div class="cart-item-sub">${escHtml(marca)} · $${fmtPrice(pVenta)}</div>
       </div>
@@ -917,11 +945,138 @@ function closeProductModal() {
 
 productModalClose.addEventListener('click', closeProductModal);
 productModalOverlay.addEventListener('click', closeProductModal);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeProductModal(); closeCatalogModal(); } });
 productModalAdd.addEventListener('click', function() {
   if (this.__product) addToCart(this.__product);
   closeProductModal();
 });
+
+// ── Catalog Modal (SADAR style) ────────────────────────────────
+function openCatalogModal(p) {
+  const catalogo = p.catalog ?? p.catalogo ?? [];
+  catalogModalCode.textContent = String(p.codigo ?? '—');
+
+  const totalVariants = catalogo.reduce((sum, item) => sum + (Array.isArray(item.variantes) ? item.variantes.length : 0), 0);
+  catalogModalVariantsCount.textContent = `${totalVariants} variante${totalVariants !== 1 ? 's' : ''}`;
+
+  catalogModalBody.innerHTML = '';
+
+  if (catalogo.length === 0) {
+    catalogModalBody.innerHTML = '<p class="sadar-empty">Sin datos de catálogo disponibles.</p>';
+  } else {
+    catalogo.forEach((item, itemIdx) => {
+      if (catalogo.length > 1) {
+        const itemHeader = document.createElement('div');
+        itemHeader.className = 'sadar-section-label';
+        itemHeader.style.cssText = 'margin-top:20px;margin-bottom:4px;';
+        itemHeader.textContent = `Ítem ${itemIdx + 1}: ${item.codigo ?? '—'}`;
+        catalogModalBody.appendChild(itemHeader);
+      }
+
+      const variantes = Array.isArray(item.variantes) ? item.variantes : [];
+
+      if (variantes.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'sadar-empty';
+        empty.textContent = 'Sin variantes registradas.';
+        catalogModalBody.appendChild(empty);
+        return;
+      }
+
+      variantes.forEach((v, idx) => {
+        const posicion   = v.posicion   ?? '';
+        const estructura = v.estructura ?? '';
+        const aplicacion = v.aplicacion ?? '';
+        const dim        = v.dimensional ?? {};
+        const equiv      = Array.isArray(v.equivalencia) ? v.equivalencia : Array.isArray(v.equivalencias) ? v.equivalencias : [];
+        const apps       = Array.isArray(v.aplicaciones) ? v.aplicaciones : [];
+        const qf         = v.quality_flags ?? {};
+
+        const hasDim = qf.has_dimensional || !!(dim.abierto || dim.cerrado || dim.superior || dim.inferior);
+
+        const dimHtml = hasDim ? `
+          <div class="sadar-section">
+            <div class="sadar-section-label">Dimensional</div>
+            <div class="sadar-dim-grid">
+              ${dim.abierto  ? `<div class="sadar-dim-item"><span class="sadar-dim-label">Abierto</span><span class="sadar-dim-val">${escHtml(dim.abierto)}</span></div>`   : ''}
+              ${dim.cerrado  ? `<div class="sadar-dim-item"><span class="sadar-dim-label">Cerrado</span><span class="sadar-dim-val">${escHtml(dim.cerrado)}</span></div>`   : ''}
+              ${dim.superior ? `<div class="sadar-dim-item"><span class="sadar-dim-label">Superior</span><span class="sadar-dim-val">${escHtml(dim.superior)}</span></div>` : ''}
+              ${dim.inferior ? `<div class="sadar-dim-item"><span class="sadar-dim-label">Inferior</span><span class="sadar-dim-val">${escHtml(dim.inferior)}</span></div>` : ''}
+            </div>
+          </div>` : '';
+
+        const equivHtml = equiv.length > 0 ? `
+          <div class="sadar-section">
+            <div class="sadar-section-label">Equivalencias (${equiv.length})</div>
+            <div class="table-wrapper">
+              <table class="sadar-apps-table">
+                <thead><tr><th>Código</th><th>Marca</th></tr></thead>
+                <tbody>
+                  ${equiv.map(eq => {
+                    const eqCodigo = typeof eq === 'string' ? eq : (eq.codigo ?? eq.code ?? '—');
+                    const eqMarca  = typeof eq === 'string' ? '' : (eq.marca  ?? eq.brand ?? '—');
+                    return `<tr><td><span class="td-code">${escHtml(String(eqCodigo))}</span></td><td>${escHtml(String(eqMarca))}</td></tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>` : '';
+
+        const appsHtml = apps.length > 0 ? `
+          <div class="sadar-section">
+            <div class="sadar-section-label">Aplicaciones (${apps.length})</div>
+            <div class="table-wrapper">
+              <table class="sadar-apps-table">
+                <thead>
+                  <tr><th>Fabricante</th><th>Modelo</th><th>Tipo</th><th class="th-num">Desde</th><th class="th-num">Hasta</th></tr>
+                </thead>
+                <tbody>
+                  ${apps.map(a => `
+                    <tr>
+                      <td>${escHtml(a.fabricante ?? '—')}</td>
+                      <td>${escHtml(a.modelo     ?? '—')}</td>
+                      <td>${escHtml(a.tipo       ?? '—')}</td>
+                      <td class="th-num">${escHtml(String(a.desde ?? '—'))}</td>
+                      <td class="th-num">${escHtml(String(a.hasta ?? 'actualidad'))}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>` : '';
+
+        const varDiv = document.createElement('div');
+        varDiv.className = 'sadar-variant' + (idx > 0 ? ' sadar-variant--sep' : '');
+        varDiv.innerHTML = `
+          <div class="sadar-variant-header">
+            <span class="sadar-variant-id">${escHtml(v.variant_id ?? `Variante ${idx + 1}`)}</span>
+            <div class="sadar-variant-badges">
+              ${posicion   ? `<span class="sadar-badge sadar-badge-pos">${escHtml(posicion)}</span>`     : ''}
+              ${estructura ? `<span class="sadar-badge sadar-badge-struct">${escHtml(estructura)}</span>` : ''}
+            </div>
+          </div>
+          ${aplicacion ? `<p class="sadar-aplicacion-text">${escHtml(aplicacion)}</p>` : ''}
+          ${dimHtml}
+          ${equivHtml}
+          ${appsHtml}
+        `;
+        catalogModalBody.appendChild(varDiv);
+      });
+    });
+  }
+
+  catalogModalOverlay.classList.add('open');
+  catalogModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCatalogModal() {
+  catalogModalOverlay.classList.remove('open');
+  catalogModal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+catalogModalClose.addEventListener('click', closeCatalogModal);
+catalogModalOverlay.addEventListener('click', e => { if (e.target === catalogModalOverlay) closeCatalogModal(); });
 
 // ── Drawer open/close ──────────────────────────────────────────
 cartBtn.addEventListener('click', openDrawer);
@@ -954,6 +1109,15 @@ btnImprimir.addEventListener('click', () => {
     const count = entries.reduce((s, [, i]) => s + i.qty, 0);
     printItemsCount.textContent = `· ${count} producto${count !== 1 ? 's' : ''}`;
   }
+  // Poblar campos de cliente en los spans print-only
+  const nombreInput = document.getElementById('cliente-nombre');
+  const nombrePrint = document.getElementById('cliente-nombre-print');
+  if (nombrePrint) nombrePrint.textContent = nombreInput ? nombreInput.value.trim() : '';
+
+  const telInput = document.getElementById('cliente-tel');
+  const telPrint = document.getElementById('cliente-tel-print');
+  if (telPrint) telPrint.textContent = telInput ? telInput.value.trim() : '';
+
   openDrawer();
   setTimeout(() => window.print(), 100);
 });

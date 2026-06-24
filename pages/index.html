@@ -217,10 +217,12 @@
         <div class="field-group">
           <label for="cliente-nombre">Nombre / Razón social</label>
           <input type="text" id="cliente-nombre" placeholder="Ej: Juan García" autocomplete="off"/>
+          <span class="cliente-print-value print-only" id="cliente-nombre-print"></span>
         </div>
         <div class="field-group">
           <label for="cliente-tel">Teléfono</label>
           <input type="text" id="cliente-tel" placeholder="Ej: 351 555-0000" autocomplete="off"/>
+          <span class="cliente-print-value print-only" id="cliente-tel-print"></span>
         </div>
       </div>
     </div>
@@ -353,6 +355,19 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ═══ CATALOG MODAL ═══ -->
+  <div class="catalog-modal-overlay" id="catalog-modal-overlay"></div>
+  <div class="catalog-modal" id="catalog-modal" role="dialog" aria-modal="true">
+    <div class="catalog-modal-head">
+      <button class="product-modal-close" id="catalog-modal-close" title="Cerrar">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 12M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="product-modal-code" id="catalog-modal-code"></span>
+      <h2 class="product-modal-name" id="catalog-modal-name"></h2>
+    </div>
+    <div class="catalog-modal-body" id="catalog-modal-body"></div>
   </div>
 
   <script src="../src/js/sidebar.js" defer></script>

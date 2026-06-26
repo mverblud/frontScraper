@@ -194,9 +194,12 @@ function flattenOvProduct(item) {
   const { codigo: _omit, ...rmRest } = item.rmData ?? {};
   return {
     ...rmRest,
-    codigo:    item.codigo    ?? '—',
-    ubicacion: item.ubicacion ?? '—',
-    stock:     item.stock     ?? null,
+    codigo:     item.codigo                  ?? '—',
+    ubicacion:  item.ubicacion               ?? '—',
+    stock:      item.stock                   ?? null,
+    aplicacion: rmRest.aplicacion            ?? item.aplicacion ?? '—',
+    marca:      rmRest.marca                 ?? item.marca      ?? '—',
+    rubro:      rmRest.rubro                 ?? item.categoria  ?? '—',
   };
 }
 

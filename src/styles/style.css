@@ -551,6 +551,21 @@ th.sort-desc .arr-up   { opacity: 0.12; }
 .col-menu-item:hover { background: var(--surface2); }
 .col-menu-item input[type="checkbox"] { accent-color: var(--brand); cursor: pointer; flex-shrink: 0; }
 
+/* ── Fila de filtros ── */
+.filter-row { border-bottom: 1px solid var(--border) !important; }
+.filter-row .filter-cell {
+  padding: 5px 8px; text-transform: none; letter-spacing: 0;
+  font-weight: 400; background: var(--surface2);
+}
+.filter-select {
+  width: 100%; box-sizing: border-box;
+  padding: 4px 7px; font-size: 0.75rem; font-family: inherit;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  outline: none; cursor: pointer; transition: border-color 0.12s;
+}
+.filter-select:focus { border-color: var(--brand); }
+
 tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
 tbody tr:last-child { border-bottom: none; }
 [data-theme="light"] tbody tr:hover { background: #fffbee; }

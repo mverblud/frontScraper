@@ -70,7 +70,7 @@
       <div class="page-title">
         <div>
           <h1>Catálogo OV</h1>
-          <p>Listado completo del catálogo OV. Agregá items al presupuesto.</p>
+          <p>Listado completo del catálogo OV.</p>
         </div>
       </div>
 
@@ -93,6 +93,10 @@
           <div class="card-meta">
             <span class="results-count-badge" id="results-count"></span>
             <span class="results-query-text" id="results-query"></span>
+            <button class="btn-col-picker" id="btn-export-csv" title="Exportar todo el catálogo a CSV">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Exportar CSV
+            </button>
             <div class="col-picker" id="col-picker">
               <button class="btn-col-picker" id="btn-columns" title="Mostrar u ocultar columnas">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="3" height="12" rx=".8" stroke="currentColor" stroke-width="1.3"/><rect x="5.5" y="1" width="3" height="12" rx=".8" stroke="currentColor" stroke-width="1.3"/><rect x="10" y="1" width="3" height="12" rx=".8" stroke="currentColor" stroke-width="1.3"/></svg>
@@ -106,6 +110,7 @@
           <table id="products-table">
             <thead>
               <tr id="products-head-row"></tr>
+              <tr id="products-filter-row" class="filter-row"></tr>
             </thead>
             <tbody id="products-body"></tbody>
           </table>

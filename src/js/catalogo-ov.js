@@ -69,81 +69,81 @@ const themeToggle = document.getElementById('theme-toggle');
 const COLUMNS = [
   {
     key: 'foto', label: 'Foto', align: 'center',
-    sortable: false, hideable: true
+    sortable: false, hideable: true, filter: null
   },
   {
     key: 'codigo', label: 'Código', align: 'left',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => String(p.codigo ?? '')
   },
   {
     key: 'ubicacion', label: 'Ubicación', align: 'left',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: 'select',
     sortValue: p => String(p.ubicacion ?? '')
   },
   {
     key: 'stock', label: 'Stock', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.stock ?? null
   },
   {
     key: 'aplicacion', label: 'Aplicación', align: 'left',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => String(p.aplicacion ?? '')
   },
   {
     key: 'marca', label: 'Marca', align: 'left',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: 'select',
     sortValue: p => String(p.marca ?? '')
   },
   {
     key: 'rubro', label: 'Rubro', align: 'left',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: 'select',
     sortValue: p => String(p.rubro ?? '')
   },
   {
     key: 'precio-lista', label: 'Precio lista', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.precioLista ?? null
   },
   {
     key: 'iva-pct', label: 'IVA(%)', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.iva ?? null
   },
   {
     key: 'iva-monto', label: 'IVA($)', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.montoIVA ?? null
   },
   {
     key: 'desc-pct', label: 'Desc.(%)', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.descuento ?? null
   },
   {
     key: 'costo-neto', label: 'Costo Neto', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.costoNeto ?? null
   },
   {
     key: 'costo-iva', label: 'Costo IVA', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.costoIVA ?? null
   },
   {
     key: 'margen', label: 'Margen', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.margen ?? null
   },
   {
     key: 'p-sugerido', label: 'P.sugerido', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => p.precioSugerido ?? null
   },
   {
     key: 'ganancia', label: 'Ganancia', align: 'num',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: null,
     sortValue: p => {
       const pv = p.precioSugerido ?? null;
       const ci = p.costoIVA      ?? null;
@@ -152,7 +152,7 @@ const COLUMNS = [
   },
   {
     key: 'agregar', label: 'Agregar', align: 'center',
-    sortable: false, hideable: false
+    sortable: false, hideable: false, filter: null
   }
 ];
 
@@ -165,6 +165,8 @@ let pageSize    = parseInt(pageSizeSelect.value);
 let sortKey = 'ubicacion';
 let sortDir = 'asc';
 let hiddenCols = new Set();
+let filteredProducts = [];
+let filters = {};
 let cart = {};
 
 // ── Persistencia carrito ──────────────────────────────────────────────────────
@@ -191,15 +193,14 @@ function loadHiddenCols() {
 
 // ── Aplanar item OV ───────────────────────────────────────────────────────────
 function flattenOvProduct(item) {
-  const { codigo: _omit, ...rmRest } = item.rmData ?? {};
   return {
-    ...rmRest,
-    codigo:     item.codigo                  ?? '—',
-    ubicacion:  item.ubicacion               ?? '—',
-    stock:      item.stock                   ?? null,
-    aplicacion: rmRest.aplicacion            ?? item.aplicacion ?? '—',
-    marca:      rmRest.marca                 ?? item.marca      ?? '—',
-    rubro:      rmRest.rubro                 ?? item.categoria  ?? '—',
+    ...item,
+    codigo:     item.codigo     ?? '—',
+    ubicacion:  item.ubicacion  ?? '—',
+    stock:      item.stock      ?? null,
+    aplicacion: item.aplicacion ?? '—',
+    marca:      item.marca      ?? '—',
+    rubro:      item.categoria  ?? '—',
   };
 }
 
@@ -263,6 +264,7 @@ function setSort(key) {
   else { sortKey = key; sortDir = 'asc'; }
   currentPage = 1;
   sortProducts();
+  applyFilters();
   renderTableHead();
   renderPage();
 }
@@ -283,6 +285,42 @@ function sortProducts() {
     else cmp = String(va).localeCompare(String(vb), 'es');
     return sortDir === 'asc' ? cmp : -cmp;
   });
+}
+
+// ── Filtrado ──────────────────────────────────────────────────────────────────
+function applyFilters() {
+  const activeFilters = COLUMNS.filter(col => {
+    if (!col.filter || !col.sortValue) return false;
+    const f = filters[col.key];
+    if (f == null) return false;
+    if (typeof f === 'string') return f !== '';
+    if (typeof f === 'object') return f.min !== '' || f.max !== '';
+    return false;
+  });
+
+  filteredProducts = activeFilters.length === 0
+    ? allProducts.slice()
+    : allProducts.filter(p =>
+        activeFilters.every(col => {
+          const v   = col.sortValue(p);
+          const f   = filters[col.key];
+          if (col.filter === 'text') {
+            return String(v ?? '').toLowerCase().includes(f.toLowerCase());
+          }
+          if (col.filter === 'select') {
+            return String(v ?? '') === f;
+          }
+          if (col.filter === 'range') {
+            if (v == null) return false;
+            const num = Number(v);
+            if (f.min !== '' && !isNaN(Number(f.min)) && num < Number(f.min)) return false;
+            if (f.max !== '' && !isNaN(Number(f.max)) && num > Number(f.max)) return false;
+            return true;
+          }
+          return true;
+        })
+      );
+
 }
 
 // ── Visibilidad columnas ──────────────────────────────────────────────────────
@@ -323,6 +361,59 @@ function initColumnsMenu() {
   });
 }
 
+// ── Fila de filtros ───────────────────────────────────────────────────────────
+function renderFilterRow() {
+  const row = document.getElementById('products-filter-row');
+  if (!row) return;
+  row.innerHTML = '';
+
+  COLUMNS.forEach(col => {
+    const th = document.createElement('th');
+    th.className = 'filter-cell';
+    th.dataset.col = col.key;
+
+    if (col.filter === 'select') {
+      const sel = document.createElement('select');
+      sel.className = 'filter-select';
+
+      const defOpt = document.createElement('option');
+      defOpt.value = '';
+      defOpt.textContent = 'Todas';
+      sel.appendChild(defOpt);
+
+      const vals = [...new Set(
+        allProducts
+          .map(p => col.sortValue ? col.sortValue(p) : null)
+          .filter(v => v != null && v !== '' && v !== '—')
+          .map(v => String(v))
+      )].sort((a, b) => a.localeCompare(b, 'es'));
+
+      vals.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        sel.appendChild(opt);
+      });
+
+      sel.addEventListener('change', function() {
+        const val = this.value;
+        if (val === '') delete filters[col.key];
+        else filters[col.key] = val;
+        currentPage = 1;
+        applyFilters();
+        renderPage();
+      });
+      th.appendChild(sel);
+    }
+    // resto de columnas → celda vacía
+
+    row.appendChild(th);
+  });
+
+  // Sincronizar visibilidad de columnas
+  applyColumnVisibility();
+}
+
 // ── Cargar catálogo OV ────────────────────────────────────────────────────────
 async function loadProducts() {
   setLoading(true);
@@ -333,20 +424,14 @@ async function loadProducts() {
     const data = await res.json();
     allProducts = (data.productos ?? []).map(flattenOvProduct);
     sortProducts();
+    applyFilters();
     const total = data.totalProductos ?? allProducts.length;
     resultsCount.textContent = `${total} producto${total !== 1 ? 's' : ''}`;
     resultsQuery.textContent = 'Catálogo OV completo';
     currentPage = 1;
     resultsSection.style.display = '';
-    if (allProducts.length === 0) {
-      productsTable.style.display = 'none';
-      tableFooter.style.display   = 'none';
-      noResults.style.display     = '';
-    } else {
-      productsTable.style.display = '';
-      noResults.style.display     = 'none';
-      renderPage();
-    }
+    renderFilterRow();
+    renderPage();
   } catch (e) {
     showError(e.message || 'No se pudo conectar con el servidor.');
   } finally {
@@ -362,13 +447,33 @@ pageSizeSelect.addEventListener('change', () => {
 
 // ── Render tabla ──────────────────────────────────────────────────────────────
 function renderPage() {
-  const total      = allProducts.length;
+  const total      = filteredProducts.length;
   const totalPages = Math.ceil(total / pageSize);
   if (currentPage > totalPages) currentPage = totalPages || 1;
 
+  // Estado vacío (API sin datos o todos filtrados)
+  if (total === 0) {
+    productsBody.innerHTML = '';
+    paginationInfo.innerHTML = '';
+    renderPaginationControls(0);
+    tableFooter.style.display   = 'none';
+    productsTable.style.display = 'none';
+    const sub = noResults.querySelector('.no-results-sub');
+    if (sub) {
+      sub.textContent = allProducts.length > 0
+        ? 'Ningún producto coincide con los filtros aplicados.'
+        : 'No encontramos productos en el catálogo OV.';
+    }
+    noResults.style.display = '';
+    return;
+  }
+
+  noResults.style.display     = 'none';
+  productsTable.style.display = '';
+
   const start = (currentPage - 1) * pageSize;
   const end   = Math.min(start + pageSize, total);
-  const slice = allProducts.slice(start, end);
+  const slice = filteredProducts.slice(start, end);
 
   productsBody.innerHTML = '';
   slice.forEach(p => {
@@ -833,6 +938,71 @@ btnImprimir.addEventListener('click', () => {
   setTimeout(() => window.print(), 100);
 });
 
+// ── Export CSV ────────────────────────────────────────────────────────────────
+function escCsv(val) {
+  if (val == null || val === '—') return '';
+  const s = String(val);
+  if (s.includes(';') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function buildCsv() {
+  const headers = [
+    'Código', 'Ubicación', 'Stock', 'Aplicación', 'Marca', 'Rubro',
+    'Precio Lista', 'IVA (%)', 'IVA ($)', 'Descuento (%)',
+    'Costo Neto', 'Costo IVA', 'Margen (%)', 'P. Sugerido', 'Ganancia'
+  ];
+
+  // Convierte a número con coma decimal; null → '0'
+  const num = val => val != null ? String(Number(val)).replace('.', ',') : '0';
+
+  const rows = allProducts.map(p => {
+    const precioVenta = p.precioSugerido ?? null;
+    const costoIva    = p.costoIVA       ?? null;
+    const ganancia    = precioVenta != null && costoIva != null
+      ? Number(precioVenta) - Number(costoIva)
+      : null;
+
+    return [
+      escCsv(p.codigo),
+      escCsv(p.ubicacion),
+      num(p.stock),
+      escCsv(p.aplicacion),
+      escCsv(p.marca),
+      escCsv(p.rubro),
+      num(p.precioLista),
+      num(p.iva),
+      num(p.montoIVA),
+      num(p.descuento),
+      num(p.costoNeto),
+      num(costoIva),
+      num(p.margen),
+      num(precioVenta),
+      num(ganancia),
+    ].join(';');
+  });
+
+  return [headers.join(';'), ...rows].join('\r\n');
+}
+
+function exportCsv() {
+  if (allProducts.length === 0) return;
+  const csv  = buildCsv();
+  const bom  = '﻿';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href     = url;
+  a.download = `catalogo-ov-${date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtPrice(val) {
   return Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -854,6 +1024,7 @@ function init() {
   loadHiddenCols();
   renderTableHead();
   initColumnsMenu();
+  document.getElementById('btn-export-csv').addEventListener('click', exportCsv);
   loadProducts();
 }
 

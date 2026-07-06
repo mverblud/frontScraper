@@ -201,7 +201,7 @@ themeToggle.addEventListener('click', () => {
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
 // Restaurar tema guardado
-applyTheme(localStorage.getItem('theme') || 'light');
+applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {

@@ -235,7 +235,7 @@ themeToggle.addEventListener('click', () => {
   const cur = document.documentElement.getAttribute('data-theme');
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
-applyTheme(localStorage.getItem('theme') || 'light');
+applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ── Encabezado de tabla ───────────────────────────────────────────────────────
 function renderTableHead() {
@@ -419,7 +419,7 @@ async function loadProducts() {
   setLoading(true);
   hideError();
   try {
-    const res = await fetch(`${API_BASE}/productos/ov`);
+    const res = await fetch(`${API_BASE}/productos/ov?page=1&limit=1000`);
     if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
     const data = await res.json();
     allProducts = (data.productos ?? []).map(flattenOvProduct);

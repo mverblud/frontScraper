@@ -16,7 +16,7 @@
     localStorage.setItem('theme', theme);
   }
 
-  applyTheme(localStorage.getItem('theme') || 'light');
+  applyTheme(localStorage.getItem('theme') || 'dark');
 
   // ── Redirección si ya está autenticado ────────────────────────────────────
 

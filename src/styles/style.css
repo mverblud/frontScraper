@@ -2150,6 +2150,11 @@ body.auth-body {
 .auth-form-body {
   display: flex; flex-direction: column; gap: 20px;
 }
+#login-form {
+  display: flex; flex-direction: column; gap: 18px;
+}
+#login-form .field-group { gap: 8px; }
+#login-form .btn-full { margin-top: 4px; }
 .auth-card .card-body {
   padding: 28px;
 }

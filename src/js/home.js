@@ -24,7 +24,7 @@
     });
   }
 
-  applyTheme(localStorage.getItem('theme') || 'light');
+  applyTheme(localStorage.getItem('theme') || 'dark');
 
   // ── BACKEND STATUS CARD ─────────────────────────────────────────────────────
 

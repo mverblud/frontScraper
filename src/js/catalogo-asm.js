@@ -265,7 +265,7 @@ themeToggle.addEventListener('click', () => {
   const cur = document.documentElement.getAttribute('data-theme');
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
-applyTheme(localStorage.getItem('theme') || 'light');
+applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ── Cargar rubros ────────────────────────────────────────────────────────────
 function loadRubros() {

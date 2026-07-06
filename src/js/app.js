@@ -78,6 +78,11 @@ const COLUMNS = [
     }
   },
   {
+    key: 'stock', label: 'Stock', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => p.hayStock === true ? 1 : 0
+  },
+  {
     key: 'agregar', label: 'Agregar', align: 'center',
     sortable: false, hideable: false
   }
@@ -201,7 +206,7 @@ themeToggle.addEventListener('click', () => {
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
 // Restaurar tema guardado
-applyTheme(localStorage.getItem('theme') || 'light');
+applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
@@ -638,6 +643,7 @@ function renderPage() {
     const ganancia    = precioVenta != null && costoIva != null
       ? Number(precioVenta) - Number(costoIva)
       : null;
+    const hayStock    = p.hayStock === true;
 
     const precioListaStr = precioLista != null ? fmtPrice(precioLista) : '—';
     const montoIvaStr    = montoIva != null ? fmtPrice(montoIva) : '—';
@@ -694,6 +700,9 @@ function renderPage() {
       <td class="td-percent" data-col="margen">${margenStr}</td>
       <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${precioVentaStr}</td>
       <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
+      <td class="td-stock" data-col="stock" style="text-align:center">
+        <span class="stock-badge ${hayStock ? 'stock-yes' : 'stock-no'}">${hayStock ? 'Sí' : 'No'}</span>
+      </td>
       <td class="td-add" data-col="agregar">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
                 title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
@@ -915,7 +924,7 @@ function openProductModal(p) {
   const costoIva    = p.costoIVA ?? null;
   const margen      = p.margen ?? null;
   const ganancia    = precioVenta != null && costoIva != null ? precioVenta - costoIva : null;
-  const stock       = p.stock ?? null;
+  const hayStock    = p.hayStock === true;
 
   productModalCode.textContent  = String(codigo);
   productModalName.textContent  = String(desc);
@@ -931,7 +940,9 @@ function openProductModal(p) {
   productModalCostoNeto.textContent = p.costoNeto != null ? `$${fmtPrice(p.costoNeto)}` : '—';
   productModalMargen.textContent   = margen   != null ? fmtPercent(margen)           : '—';
   productModalGanancia.textContent = ganancia != null ? `$${fmtPrice(ganancia)}`     : '—';
-  productModalStock.textContent    = stock    != null ? String(stock)                : '—';
+  productModalStock.textContent = hayStock ? 'Sí' : 'No';
+  productModalStock.classList.remove('stock-yes', 'stock-no');
+  productModalStock.classList.add(hayStock ? 'stock-yes' : 'stock-no');
 
   if (foto) {
     productModalImg.src = foto;

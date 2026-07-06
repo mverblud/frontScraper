@@ -1,6 +1,7 @@
 const API_BASE = window.ENV.PRODUCTOS_BFF;
 const CART_STORAGE_KEY    = 'ov_presupuesto';
-const HIDDEN_COLS_KEY     = 'ov_nv_hidden_cols';
+const HIDDEN_COLS_KEY     = 'ov_nv_hidden_cols_v2';
+const DEFAULT_HIDDEN_COLS = ['iva-pct', 'iva-monto', 'desc-pct', 'margen'];
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const rubroSelect        = document.getElementById('rubro');
@@ -156,6 +157,14 @@ const COLUMNS = [
     }
   },
   {
+    key: 'stock', label: 'Stock', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => {
+      if (typeof p.hayStock === 'boolean') return p.hayStock ? 1 : 0;
+      return p.stock != null ? (Number(p.stock) > 0 ? 1 : 0) : -1;
+    }
+  },
+  {
     key: 'agregar', label: 'Agregar', align: 'center',
     sortable: false, hideable: false
   }
@@ -166,6 +175,9 @@ const SORT_ARROWS_SVG = `<svg class="sort-arrows" width="8" height="12" viewBox=
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 let allProducts = [];
+let filterAplicacion = '';
+let filterMarca      = new Set();
+let filterRubro      = new Set();
 let currentPage = 1;
 let pageSize    = parseInt(pageSizeSelect.value);
 
@@ -194,8 +206,13 @@ function saveHiddenCols() {
 function loadHiddenCols() {
   try {
     const raw = localStorage.getItem(HIDDEN_COLS_KEY);
-    if (raw) hiddenCols = new Set(JSON.parse(raw));
-  } catch (_) { hiddenCols = new Set(); }
+    if (raw !== null) {
+      hiddenCols = new Set(JSON.parse(raw));
+    } else {
+      // Primera vez con esta versión: aplicar default
+      hiddenCols = new Set(DEFAULT_HIDDEN_COLS);
+    }
+  } catch (_) { hiddenCols = new Set(DEFAULT_HIDDEN_COLS); }
 }
 
 // ── Normalizar producto ───────────────────────────────────────────────────────
@@ -248,7 +265,7 @@ themeToggle.addEventListener('click', () => {
   const cur = document.documentElement.getAttribute('data-theme');
   applyTheme(cur === 'dark' ? 'light' : 'dark');
 });
-applyTheme(localStorage.getItem('theme') || 'light');
+applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ── Encabezado de tabla (generado desde COLUMNS) ───────────────────────────────
 function renderTableHead() {
@@ -372,6 +389,7 @@ function init() {
   loadHiddenCols();
   renderTableHead();
   initColumnsMenu();
+  initResultFilters();
   loadRubros();
   loadCars();
 }
@@ -548,6 +566,8 @@ btnBuscar.addEventListener('click', async () => {
     allProducts = data.productos ?? [];
     // Ordenar con el estado de orden actual (por defecto: marca asc)
     sortProducts();
+    // Poblar y resetear filtros de resultados (client-side)
+    populateResultFilters();
 
     const totalProductos = data.totalProductos ?? allProducts.length;
 
@@ -600,20 +620,142 @@ btnLimpiar.addEventListener('click', () => {
   carModelSelect.disabled = true;
   carModelError.classList.remove('visible');
   allProducts = [];
+  filterAplicacion = '';
+  filterMarca      = new Set();
+  filterRubro      = new Set();
+  const filterAplicacionInput = document.getElementById('filter-aplicacion');
+  if (filterAplicacionInput) filterAplicacionInput.value = '';
+  const filtersBar = document.getElementById('results-filters');
+  if (filtersBar) filtersBar.style.display = 'none';
   currentPage = 1;
   hideResults();
   hideError();
 });
 
+// ── Filtros de resultados (client-side) ───────────────────────────────────────
+function getFilteredProducts() {
+  const q = filterAplicacion.trim().toLowerCase();
+  return allProducts.filter(p => {
+    if (q && !String(p.aplicacion ?? '').toLowerCase().includes(q)) return false;
+    if (filterMarca.size && !filterMarca.has(p.marca ?? '')) return false;
+    if (filterRubro.size && !filterRubro.has(p.rubro ?? '')) return false;
+    return true;
+  });
+}
+
+function buildPickerMenu(menuEl, btnEl, lblEl, values, activeSet, allLabel) {
+  menuEl.innerHTML = '';
+
+  values.forEach(val => {
+    const lbl = document.createElement('label');
+    lbl.className = 'rf-picker-item';
+
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.value   = val;
+    cb.checked = activeSet.has(val);
+    cb.addEventListener('change', () => {
+      if (cb.checked) activeSet.add(val);
+      else            activeSet.delete(val);
+      updatePickerLabel(lblEl, activeSet, allLabel);
+      currentPage = 1;
+      renderPage();
+    });
+
+    lbl.appendChild(cb);
+    lbl.append(` ${val}`);
+    menuEl.appendChild(lbl);
+  });
+
+  updatePickerLabel(lblEl, activeSet, allLabel);
+}
+
+function updatePickerLabel(lblEl, set, allLabel) {
+  if (!lblEl) return;
+  if (set.size === 0) {
+    lblEl.textContent = allLabel;
+  } else if (set.size === 1) {
+    lblEl.textContent = [...set][0];
+  } else {
+    lblEl.textContent = `${set.size} seleccionadas`;
+  }
+}
+
+function populateResultFilters() {
+  // Resetear estado de filtros
+  filterAplicacion = '';
+  filterMarca      = new Set();
+  filterRubro      = new Set();
+  const filterAplicacionInput = document.getElementById('filter-aplicacion');
+  if (filterAplicacionInput) filterAplicacionInput.value = '';
+
+  // Marcas únicas ordenadas
+  const marcas = [...new Set(allProducts.map(p => p.marca).filter(Boolean))].sort((a, b) =>
+    String(a).localeCompare(String(b), 'es')
+  );
+  const menuMarca = document.getElementById('menu-filter-marca');
+  const lblMarca  = document.getElementById('lbl-filter-marca');
+  if (menuMarca) buildPickerMenu(menuMarca, null, lblMarca, marcas, filterMarca, 'Todas las marcas');
+
+  // Rubros únicos ordenados
+  const rubros = [...new Set(allProducts.map(p => p.rubro).filter(Boolean))].sort((a, b) =>
+    String(a).localeCompare(String(b), 'es')
+  );
+  const menuRubro = document.getElementById('menu-filter-rubro');
+  const lblRubro  = document.getElementById('lbl-filter-rubro');
+  if (menuRubro) buildPickerMenu(menuRubro, null, lblRubro, rubros, filterRubro, 'Todos los rubros');
+
+  // Mostrar barra de filtros
+  const filtersBar = document.getElementById('results-filters');
+  if (filtersBar) filtersBar.style.display = '';
+}
+
+function initResultFilters() {
+  const filterAplicacionInput = document.getElementById('filter-aplicacion');
+  if (filterAplicacionInput) {
+    filterAplicacionInput.addEventListener('input', () => {
+      filterAplicacion = filterAplicacionInput.value;
+      currentPage = 1;
+      renderPage();
+    });
+  }
+
+  // Wiring open/close para cada picker
+  [
+    { pickerId: 'picker-marca', btnId: 'btn-filter-marca', menuId: 'menu-filter-marca' },
+    { pickerId: 'picker-rubro', btnId: 'btn-filter-rubro', menuId: 'menu-filter-rubro' }
+  ].forEach(({ pickerId, btnId, menuId }) => {
+    const picker = document.getElementById(pickerId);
+    const btn    = document.getElementById(btnId);
+    const menu   = document.getElementById(menuId);
+    if (!picker || !btn || !menu) return;
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = picker.classList.contains('open');
+      // Cerrar todos los pickers abiertos
+      document.querySelectorAll('.rf-picker.open').forEach(p => p.classList.remove('open'));
+      if (!isOpen) picker.classList.add('open');
+    });
+  });
+
+  document.addEventListener('click', e => {
+    document.querySelectorAll('.rf-picker.open').forEach(picker => {
+      if (!picker.contains(e.target)) picker.classList.remove('open');
+    });
+  });
+}
+
 // ── Render tabla ───────────────────────────────────────────────────────────────
 function renderPage() {
-  const total      = allProducts.length;
+  const filtered   = getFilteredProducts();
+  const total      = filtered.length;
   const totalPages = Math.ceil(total / pageSize);
   if (currentPage > totalPages) currentPage = totalPages || 1;
 
   const start = (currentPage - 1) * pageSize;
   const end   = Math.min(start + pageSize, total);
-  const slice = allProducts.slice(start, end);
+  const slice = filtered.slice(start, end);
 
   productsBody.innerHTML = '';
   slice.forEach(p => {
@@ -637,6 +779,9 @@ function renderPage() {
     const ganancia    = precioVenta != null && costoIva != null
       ? Number(precioVenta) - Number(costoIva)
       : null;
+    const stockBool   = typeof p.hayStock === 'boolean'
+      ? p.hayStock
+      : (p.stock != null ? Number(p.stock) > 0 : null);
 
     const precioListaStr = precioLista != null ? fmtPrice(precioLista) : '—';
     const montoIvaStr    = montoIva    != null ? fmtPrice(montoIva)    : '—';
@@ -695,6 +840,12 @@ function renderPage() {
       <td class="td-percent" data-col="margen">${margenStr}</td>
       <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${precioVentaStr}</td>
       <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
+      <td class="td-stock" data-col="stock" style="text-align:center">
+        ${stockBool === null
+          ? '<span>—</span>'
+          : `<span class="stock-badge ${stockBool ? 'stock-yes' : 'stock-no'}">${stockBool ? 'Sí' : 'No'}</span>`
+        }
+      </td>
       <td class="td-add" data-col="agregar">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
                 title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
@@ -902,7 +1053,9 @@ function openProductModal(p) {
   const costoIva    = p.costoIVA       ?? null;
   const margen      = p.margen         ?? null;
   const ganancia    = precioVenta != null && costoIva != null ? precioVenta - costoIva : null;
-  const stock       = p.stock          ?? null;
+  const stockBool   = typeof p.hayStock === 'boolean'
+    ? p.hayStock
+    : (p.stock != null ? Number(p.stock) > 0 : null);
 
   productModalCode.textContent  = String(codigo);
   productModalName.textContent  = String(desc);
@@ -918,7 +1071,9 @@ function openProductModal(p) {
   productModalCostoNeto.textContent = p.costoNeto != null ? `$${fmtPrice(p.costoNeto)}` : '—';
   productModalMargen.textContent   = margen   != null ? fmtPercent(margen)           : '—';
   productModalGanancia.textContent = ganancia != null ? `$${fmtPrice(ganancia)}`     : '—';
-  productModalStock.textContent    = stock    != null ? String(stock)                : '—';
+  productModalStock.textContent = stockBool === null ? '—' : (stockBool ? 'Sí' : 'No');
+  productModalStock.classList.remove('stock-yes', 'stock-no');
+  if (stockBool !== null) productModalStock.classList.add(stockBool ? 'stock-yes' : 'stock-no');
 
   if (foto) {
     productModalImg.src = foto;

@@ -158,6 +158,37 @@
             </div>
           </div>
         </div>
+        <!-- FILTROS SOBRE RESULTADOS (client-side) -->
+        <div class="results-filters" id="results-filters" style="display:none">
+          <div class="field-group aplicacion-group">
+            <label for="filter-aplicacion">Filtrar aplicación</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9L12.5 12.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <input type="text" id="filter-aplicacion" placeholder="Ej: tras, delantero, renegade…" autocomplete="off"/>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Marca</label>
+            <div class="rf-picker" id="picker-marca">
+              <button type="button" class="rf-picker-btn" id="btn-filter-marca">
+                <span id="lbl-filter-marca">Todas las marcas</span>
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="rf-picker-menu" id="menu-filter-marca"></div>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Categoría</label>
+            <div class="rf-picker" id="picker-rubro">
+              <button type="button" class="rf-picker-btn" id="btn-filter-rubro">
+                <span id="lbl-filter-rubro">Todos los rubros</span>
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="rf-picker-menu" id="menu-filter-rubro"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="table-wrapper">
           <table id="products-table">
             <thead>

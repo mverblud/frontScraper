@@ -2212,3 +2212,19 @@ body.auth-body {
   .auth-card { max-width: 100%; }
   .auth-screen { padding: 24px 16px; }
 }
+
+/* ── Stock badge (RM hayStock booleano + ASM stock numérico) ──────────────── */
+.stock-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: .02em;
+}
+.stock-yes  { background: rgba(34, 197, 94, .15); color: #22c55e; }
+.stock-no   { background: rgba(239, 68, 68, .15);  color: #ef4444; }
+/* colores en el slot del modal */
+.product-modal-metric-val.stock-yes { color: #22c55e; }
+.product-modal-metric-val.stock-no  { color: #ef4444; }

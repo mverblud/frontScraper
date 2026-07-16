@@ -60,6 +60,13 @@
         <path d="M4 5.5h5M4 8h8M4 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
+    {
+      href: 'catalogo-maestro.html',
+      label: 'Catálogo Maestro',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2l1.6 3.6L13.5 6l-2.9 2.6.8 3.9L8 10.6l-3.4 1.9.8-3.9L2.5 6l3.9-.4L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>`,
+    },
   ];
 
   // ── Detectar ítem activo ────────────────────────────────────────────────────

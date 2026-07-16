@@ -67,6 +67,15 @@
         <path d="M8 2l1.6 3.6L13.5 6l-2.9 2.6.8 3.9L8 10.6l-3.4 1.9.8-3.9L2.5 6l3.9-.4L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
       </svg>`,
     },
+    {
+      href: 'tienda.html',
+      label: 'Tienda Web',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 5l1-3h10l1 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 5h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5.5 8a2.5 2.5 0 005 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
   ];
 
   // ── Detectar ítem activo ────────────────────────────────────────────────────

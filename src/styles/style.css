@@ -2286,3 +2286,92 @@ body.auth-body {
 /* colores en el slot del modal */
 .product-modal-metric-val.stock-yes { color: #22c55e; }
 .product-modal-metric-val.stock-no  { color: #ef4444; }
+
+/* ── Tienda Web: grilla de cards (vista storefront) ────────────────────────── */
+.tienda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.tienda-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.tienda-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--brand);
+}
+.tienda-card-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.tienda-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+}
+.tienda-card-img .no-photo {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.tienda-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+.tienda-card-title {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.2em;
+}
+.tienda-card-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.tienda-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tienda-card-badge {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.tienda-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.tienda-card-price {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brand-text);
+}
+[data-theme="dark"] .tienda-card-price { color: var(--brand); }

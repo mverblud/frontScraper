@@ -240,7 +240,7 @@ function renderCards() {
     const marca       = p.productBrand?.name ?? '—';
     const categoria   = p.category?.name     ?? '—';
     const supplier    = Array.isArray(p.suppliers) && p.suppliers.length > 0 ? p.suppliers[0] : null;
-    const stock       = supplier?.stock ?? null;
+    const stock       = supplier?.stockSupplier ?? null;
     const precio      = supplier?.suggestedPrice ?? null;
     const img         = getPrimaryImageUrl(p);
     const hasStock    = stock !== null ? Number(stock) > 0 : null;
@@ -338,7 +338,7 @@ function openDetalle(p) {
   const heroMarca  = heroSupplier?.brand   ?? p.productBrand?.name ?? '—';
   const heroRubro  = heroSupplier?.section ?? p.category?.name    ?? '—';
   const heroFuente = heroSupplier?.supplierName ?? '—';
-  const heroStock  = heroSupplier?.stock ?? p.stock ?? null;
+  const heroStock  = heroSupplier?.stockSupplier ?? p.stock ?? null;
   const heroGanancia = (heroSupplier?.suggestedPrice != null && heroSupplier?.costWithIva != null)
     ? heroSupplier.suggestedPrice - heroSupplier.costWithIva
     : null;
@@ -426,24 +426,16 @@ function openDetalle(p) {
             <span class="sadar-dim-val">${escHtml(heroSupplier.currency ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Disponible</span>
-            <span class="sadar-dim-val">${boolBadge(heroSupplier.available)}</span>
-          </div>
-          <div class="sadar-dim-item">
             <span class="sadar-dim-label">Activo</span>
             <span class="sadar-dim-val">${boolBadge(heroSupplier.active)}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Precio actualizado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.priceUpdatedAt))}</span>
+            <span class="sadar-dim-label">Creado</span>
+            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.createdAt))}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Stock actualizado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.stockUpdatedAt))}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Último scrape</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.lastScrapedAt))}</span>
+            <span class="sadar-dim-label">Actualizado</span>
+            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.updatedAt))}</span>
           </div>
         </div>
       </div>` : ''}

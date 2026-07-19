@@ -74,8 +74,19 @@
         </div>
       </div>
 
+      <!-- BOOT: se muestra mientras cargan los selectores del servicio Maestro -->
+      <div class="page-spinner" id="boot-spinner">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="30 30" stroke-linecap="round"/></svg>
+        Cargando…
+      </div>
+      <div class="error-card" id="boot-error" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="#EF4444" stroke-width="1.5"/><path d="M9 5.5V9.5M9 12h.01" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p>No se pudo conectar con el servicio Maestro. Verificá que el servicio esté activo.</p>
+        <button id="boot-retry" class="btn-ghost">Reintentar</button>
+      </div>
+
       <!-- SEARCH CARD -->
-      <div class="card search-card">
+      <div class="card search-card" id="search-card" style="display:none">
         <div class="card-header">
           <div class="card-title">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -237,7 +248,7 @@
   </div>
 
   <script src="../src/js/sidebar.js" defer></script>
-  <script src="../src/js/health.js" defer></script>
+  <script src="../src/js/maestro-boot.js" defer></script>
   <script src="../src/js/catalogo-maestro.js" defer></script>
 </body>
 </html>

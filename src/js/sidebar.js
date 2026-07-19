@@ -76,6 +76,15 @@
         <path d="M5.5 8a2.5 2.5 0 005 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
+    {
+      href: 'presupuestos.html',
+      label: 'Presupuestos',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="3" y="2.5" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6 1.5h4a1 1 0 011 1v1H5v-1a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5.5 7h5M5.5 9.5h5M5.5 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
   ];
 
   // ── Detectar ítem activo ────────────────────────────────────────────────────

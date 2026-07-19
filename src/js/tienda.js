@@ -114,6 +114,7 @@ async function loadCategorias() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    filtroCategoryId.querySelectorAll('option:not(:first-child)').forEach(o => o.remove());
     (data.categories || [])
       .slice()
       .sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'))
@@ -125,6 +126,7 @@ async function loadCategorias() {
       });
   } catch (e) {
     console.error('Error al cargar categorías:', e);
+    throw e;
   }
 }
 
@@ -135,6 +137,7 @@ async function loadMarcas() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    filtroBrandId.querySelectorAll('option:not(:first-child)').forEach(o => o.remove());
     (data.brands || [])
       .slice()
       .sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'))
@@ -146,6 +149,7 @@ async function loadMarcas() {
       });
   } catch (e) {
     console.error('Error al cargar marcas:', e);
+    throw e;
   }
 }
 
@@ -532,6 +536,5 @@ pageSizeSelect.addEventListener('change', () => {
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-loadCategorias();
-loadMarcas();
 populateYears();
+maestroBoot({ loaders: [loadCategorias, loadMarcas] });

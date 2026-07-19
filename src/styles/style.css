@@ -870,6 +870,15 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   font-size: 0.72rem; color: var(--text-muted);
 }
 
+/* Columna Imagen — Catálogo Maestro (miniaturas producto + proveedor lado a lado) */
+.td-foto-maestro { width: 104px; padding: 8px; }
+.td-foto-maestro-wrap {
+  display: flex; gap: 6px; align-items: center; justify-content: center;
+}
+.product-thumb--sup {
+  opacity: 0.9;
+}
+
 /* Botón agregar al carrito */
 .td-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
 .btn-add {
@@ -1494,6 +1503,24 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
 
 .product-modal-add { margin-top: auto; }
 
+/* Catálogo Maestro: precios y métricas en una única grilla, todas del mismo tamaño */
+.sadar-hero-info .product-modal-metrics {
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+.sadar-hero-info .product-modal-metric-val {
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.sadar-hero-info .product-modal-metric-item.highlight {
+  background: var(--brand-light); border-color: var(--brand);
+}
+[data-theme="dark"] .sadar-hero-info .product-modal-metric-item.highlight {
+  background: rgba(255,186,0,0.08); border-color: rgba(255,186,0,0.3);
+}
+.sadar-hero-info .product-modal-metric-item.highlight .product-modal-metric-val { color: var(--brand-text); }
+[data-theme="dark"] .sadar-hero-info .product-modal-metric-item.highlight .product-modal-metric-val { color: var(--brand); }
+
 /* Foto en tabla — clickable */
 .product-thumb { cursor: zoom-in; transition: opacity 0.15s; }
 .product-thumb:hover { opacity: 0.75; }
@@ -2025,8 +2052,8 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
 
 /* SADAR detail modal overrides */
 .sadar-detalle-modal {
-  width: min(780px, 96vw);
-  max-height: 88vh;
+  width: min(1100px, 96vw);
+  max-height: 92vh;
   overflow: hidden;
 }
 .sadar-detalle-modal.open { display: flex !important; flex-direction: column; }
@@ -2047,10 +2074,38 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   border: 1px solid var(--border);
   border-radius: 20px; padding: 2px 10px;
 }
+.sadar-modal-add {
+  margin-left: auto; margin-right: 40px;
+  padding: 7px 16px; font-size: 0.78rem;
+}
 
 .sadar-modal-body {
   overflow-y: auto; flex: 1;
   padding: 0 24px 24px;
+}
+
+/* Hero: imágenes (producto + proveedor) a la izquierda, datos del proveedor principal a la derecha */
+.sadar-hero {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  margin: 0 -24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sadar-hero-images {
+  background: var(--surface2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 20px;
+}
+.sadar-hero-images img {
+  max-width: 100%; max-height: 220px;
+  object-fit: contain; border-radius: 8px;
+  display: block;
+}
+.sadar-hero-info {
+  padding: 20px 22px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+  min-width: 0;
 }
 
 /* Variants */
@@ -2095,7 +2150,11 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
 
 /* Equivalencias */
 .sadar-equiv-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.sadar-equiv-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.sadar-equiv-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 8px 12px;
+}
 .sadar-equiv-marca { font-size: 0.68rem; color: var(--text-muted); line-height: 1; }
 
 /* Applications table */
@@ -2148,6 +2207,8 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   .cards-grid { grid-template-columns: 1fr 1fr; }
   .sadar-search-row { flex-direction: column; align-items: stretch; }
   .sadar-detalle-modal { max-height: 95vh; width: 96vw; }
+  .sadar-hero { grid-template-columns: 1fr; }
+  .sadar-hero-images { border-right: none; border-bottom: 1px solid var(--border); }
 }
 @media (max-width: 420px) {
   .cards-grid { grid-template-columns: 1fr; }
@@ -2218,6 +2279,7 @@ body.auth-body {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
+  font-family: 'Inter', sans-serif;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.5;
@@ -2225,6 +2287,107 @@ body.auth-body {
 }
 .stock-yes  { background: rgba(34, 197, 94, .15); color: #22c55e; }
 .stock-no   { background: rgba(239, 68, 68, .15);  color: #ef4444; }
+/* Presupuestos: stock combinado propio (local OV) vs. proveedor */
+.stock-propio    { background: rgba(34, 197, 94, .15);  color: #22c55e; }
+.stock-proveedor { background: rgba(245, 158, 11, .15); color: #f59e0b; }
+.stock-badge .stock-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+.stock-proveedor .stock-dot { border-radius: 1px; transform: rotate(45deg); }
 /* colores en el slot del modal */
 .product-modal-metric-val.stock-yes { color: #22c55e; }
 .product-modal-metric-val.stock-no  { color: #ef4444; }
+
+/* ── Tienda Web: grilla de cards (vista storefront) ────────────────────────── */
+.tienda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.tienda-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.tienda-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--brand);
+}
+.tienda-card-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.tienda-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+}
+.tienda-card-img .no-photo {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.tienda-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+.tienda-card-title {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.2em;
+}
+.tienda-card-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.tienda-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tienda-card-badge {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.tienda-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.tienda-card-price {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brand-text);
+}
+[data-theme="dark"] .tienda-card-price { color: var(--brand); }

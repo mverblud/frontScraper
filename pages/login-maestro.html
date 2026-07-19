@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OV Suspensión · Login Sistema de Gestión</title>
+  <title>OV Suspensión · Login Catálogo Maestro</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../src/styles/style.css" />
@@ -15,8 +15,8 @@
     })();
   </script>
   <script src="../src/config/env.js"></script>
-  <!-- Sin data-guard: login.js hace la verificación inversa -->
-  <script src="../src/js/auth.js"></script>
+  <!-- Sin data-guard: login-maestro.js hace la verificación inversa -->
+  <script src="../src/js/auth-maestro.js"></script>
 </head>
 <body class="auth-body">
 
@@ -28,7 +28,7 @@
         <img src="../images/cRecurso%204@4x.png" alt="OV Suspensión" class="auth-logo-img" />
         <div class="auth-logo-text">
           <span class="auth-logo-name">OV Suspensión</span>
-          <span class="auth-logo-sub">Sistema de Gestión</span>
+          <span class="auth-logo-sub">Catálogo Maestro</span>
         </div>
       </div>
 
@@ -40,7 +40,7 @@
               <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
               <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
-            Login · Sistema de Gestión
+            Login · Catálogo Maestro
           </div>
         </div>
         <div class="card-body auth-form-body">
@@ -51,21 +51,21 @@
               <circle cx="9" cy="9" r="7.5" stroke="#EF4444" stroke-width="1.5"/>
               <path d="M9 5.5V9.5M9 12h.01" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
-            <p id="login-error-msg">Usuario o contraseña incorrectos.</p>
+            <p id="login-error-msg">Email o contraseña incorrectos.</p>
           </div>
 
           <form id="login-form" novalidate>
 
             <div class="field-group">
-              <label for="username">Usuario</label>
+              <label for="email">Email</label>
               <div class="input-wrap">
                 <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.5"/>
-                  <path d="M2.5 13.5c0-3 2.239-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M2 4l6 5 6-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <input type="text" id="username" name="username"
-                  placeholder="Ingresá tu usuario"
-                  autocomplete="username" />
+                <input type="email" id="email" name="email"
+                  placeholder="Ingresá tu email"
+                  autocomplete="email" />
               </div>
             </div>
 
@@ -128,6 +128,6 @@
     </div>
   </div>
 
-  <script src="../src/js/login.js"></script>
+  <script src="../src/js/login-maestro.js"></script>
 </body>
 </html>

@@ -60,6 +60,31 @@
         <path d="M4 5.5h5M4 8h8M4 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
+    {
+      href: 'catalogo-maestro.html',
+      label: 'Catálogo Maestro',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2l1.6 3.6L13.5 6l-2.9 2.6.8 3.9L8 10.6l-3.4 1.9.8-3.9L2.5 6l3.9-.4L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>`,
+    },
+    {
+      href: 'tienda.html',
+      label: 'Tienda Web',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 5l1-3h10l1 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 5h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5.5 8a2.5 2.5 0 005 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      href: 'presupuestos.html',
+      label: 'Presupuestos',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="3" y="2.5" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6 1.5h4a1 1 0 011 1v1H5v-1a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5.5 7h5M5.5 9.5h5M5.5 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
   ];
 
   // ── Detectar ítem activo ────────────────────────────────────────────────────

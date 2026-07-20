@@ -33,8 +33,7 @@ const paginationControls = document.getElementById('pagination-controls');
 const detalleOverlay       = document.getElementById('detalle-modal-overlay');
 const detalleModal         = document.getElementById('detalle-modal');
 const detalleClose         = document.getElementById('detalle-modal-close');
-const detalleCode          = document.getElementById('detalle-modal-code');
-const detalleVariantsCount = document.getElementById('detalle-modal-variants-count');
+const detalleTitle         = document.getElementById('detalle-modal-title');
 const detalleBody          = document.getElementById('detalle-modal-body');
 const detalleAdd           = document.getElementById('detalle-modal-add');
 
@@ -208,12 +207,7 @@ function fmtDate(val) {
   if (!val) return '—';
   const d = new Date(val);
   if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-function boolBadge(val, trueLabel = 'Sí', falseLabel = 'No') {
-  if (val === null || val === undefined) return '<span class="td-muted">—</span>';
-  const isTrue = !!val;
-  return `<span class="stock-badge ${isTrue ? 'stock-yes' : 'stock-no'}">${isTrue ? trueLabel : falseLabel}</span>`;
+  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 // Badge de stock combinado: prioriza el stock propio (local OV) sobre el del proveedor.
 function stockBadge(p) {
@@ -861,15 +855,15 @@ function openDetalle(p) {
   const dimensions       = p.dimensions && typeof p.dimensions === 'object' ? p.dimensions : {};
   const dimEntries       = Object.entries(dimensions).filter(([, v]) => v !== null && v !== undefined && v !== '');
 
-  detalleCode.textContent = codigo;
-  detalleVariantsCount.textContent = `${suppliers.length} proveedor${suppliers.length !== 1 ? 'es' : ''}`;
   detalleBody.innerHTML = '';
   detalleAdd.__rawProduct = p;
 
   const heroSupplier = suppliers.length > 0 ? suppliers[0] : null;
   const heroProdImg   = getPrimaryImageUrl(p);
   const heroSupImg    = heroSupplier?.imageUrl ?? '';
-  const heroAplicacion = heroSupplier?.application ?? '';
+  const productAplicacion = p.application ?? '';
+
+  detalleTitle.textContent = `${codigo}${productAplicacion ? ` - ${productAplicacion}` : ''}`;
   const heroMarca  = heroSupplier?.brand   ?? p.productBrand?.name ?? '—';
   const heroRubro  = heroSupplier?.section ?? p.category?.name    ?? '—';
   const heroFuente = heroSupplier?.supplierName ?? '—';
@@ -882,15 +876,20 @@ function openDetalle(p) {
   heroSection.className = 'sadar-hero';
   heroSection.innerHTML = `
     <div class="sadar-hero-images">
-      ${heroProdImg ? `<img src="${escHtml(heroProdImg)}" alt="Producto ${escHtml(String(codigo))}" loading="lazy" onerror="this.style.display='none'"/>` : ''}
-      ${heroSupImg  ? `<img src="${escHtml(heroSupImg)}" alt="Proveedor ${escHtml(String(codigo))}" loading="lazy" onerror="this.style.display='none'"/>` : ''}
-      ${!heroProdImg && !heroSupImg ? '<span class="td-muted">Sin foto disponible</span>' : ''}
+      <div class="sadar-hero-image-block">
+        <span class="sadar-hero-image-label">Imagen BD</span>
+        <div class="sadar-hero-image-box">
+          ${heroProdImg ? `<img src="${escHtml(heroProdImg)}" alt="Producto ${escHtml(String(codigo))}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'td-muted',textContent:'Sin foto'}))"/>` : '<span class="td-muted">Sin foto</span>'}
+        </div>
+      </div>
+      <div class="sadar-hero-image-block">
+        <span class="sadar-hero-image-label">Imagen Proveedor</span>
+        <div class="sadar-hero-image-box">
+          ${heroSupImg ? `<img src="${escHtml(heroSupImg)}" alt="Proveedor ${escHtml(String(codigo))}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'td-muted',textContent:'Sin foto'}))"/>` : '<span class="td-muted">Sin foto</span>'}
+        </div>
+      </div>
     </div>
     <div class="sadar-hero-info">
-      ${heroAplicacion ? `
-      <div class="product-modal-header">
-        <h2 class="product-modal-name">${escHtml(heroAplicacion)}</h2>
-      </div>` : ''}
       <div class="product-modal-tags">
         <div class="product-modal-tag">
           <span class="product-modal-tag-label">Marca</span>
@@ -943,30 +942,26 @@ function openDetalle(p) {
         <div class="sadar-equiv-list">
           ${crossReferences.map(cr => `
             <div class="sadar-equiv-item">
-              <span class="td-code">${escHtml(cr.code ?? '—')}</span>
               <span class="sadar-equiv-marca">${escHtml(cr.brandName ?? '—')}</span>
+              <span class="sadar-equiv-code">${escHtml(cr.code ?? '—')}</span>
             </div>`).join('')}
         </div>
       </div>` : ''}
       ${heroSupplier ? `
       <div class="sadar-section" style="margin-top:0">
-        <div class="sadar-section-label">Datos del proveedor</div>
+        <div class="sadar-section-label">Proveedor</div>
         <div class="sadar-dim-grid">
           <div class="sadar-dim-item">
             <span class="sadar-dim-label">Código prov.</span>
             <span class="sadar-dim-val">${escHtml(heroSupplier.supplierProductCode ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Moneda</span>
-            <span class="sadar-dim-val">${escHtml(heroSupplier.currency ?? '—')}</span>
+            <span class="sadar-dim-label">Aplicación</span>
+            <span class="sadar-dim-val">${escHtml(heroSupplier.application ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Activo</span>
-            <span class="sadar-dim-val">${boolBadge(heroSupplier.active)}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Creado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.createdAt))}</span>
+            <span class="sadar-dim-label">Stock</span>
+            <span class="sadar-dim-val">${escHtml(heroSupplier.stockSupplier ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
             <span class="sadar-dim-label">Actualizado</span>

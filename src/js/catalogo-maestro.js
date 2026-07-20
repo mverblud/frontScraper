@@ -26,8 +26,7 @@ const paginationControls = document.getElementById('pagination-controls');
 const detalleOverlay       = document.getElementById('detalle-modal-overlay');
 const detalleModal         = document.getElementById('detalle-modal');
 const detalleClose         = document.getElementById('detalle-modal-close');
-const detalleCode          = document.getElementById('detalle-modal-code');
-const detalleVariantsCount = document.getElementById('detalle-modal-variants-count');
+const detalleTitle         = document.getElementById('detalle-modal-title');
 const detalleBody          = document.getElementById('detalle-modal-body');
 
 // Theme
@@ -94,7 +93,7 @@ function fmtDate(val) {
   if (!val) return '—';
   const d = new Date(val);
   if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function boolBadge(val, trueLabel = 'Sí', falseLabel = 'No') {
@@ -426,15 +425,15 @@ function openDetalle(p) {
   const dimensions      = p.dimensions && typeof p.dimensions === 'object' ? p.dimensions : {};
   const dimEntries      = Object.entries(dimensions).filter(([, v]) => v !== null && v !== undefined && v !== '');
 
-  detalleCode.textContent = codigo;
-  detalleVariantsCount.textContent = `${suppliers.length} proveedor${suppliers.length !== 1 ? 'es' : ''}`;
   detalleBody.innerHTML = '';
 
   // ── Hero (imágenes + datos del proveedor principal) ─────────────────────────
   const heroSupplier = suppliers.length > 0 ? suppliers[0] : null;
   const heroProdImg   = getPrimaryImageUrl(p);
   const heroSupImg    = heroSupplier?.imageUrl ?? '';
-  const heroAplicacion = heroSupplier?.application ?? '';
+  const productAplicacion = p.application ?? '';
+
+  detalleTitle.textContent = `${codigo}${productAplicacion ? ` - ${productAplicacion}` : ''}`;
   const heroMarca  = heroSupplier?.brand   ?? p.productBrand?.name ?? '—';
   const heroRubro  = heroSupplier?.section ?? p.category?.name    ?? '—';
   const heroFuente = heroSupplier?.supplierName ?? '—';
@@ -452,10 +451,6 @@ function openDetalle(p) {
       ${!heroProdImg && !heroSupImg ? '<span class="td-muted">Sin foto disponible</span>' : ''}
     </div>
     <div class="sadar-hero-info">
-      ${heroAplicacion ? `
-      <div class="product-modal-header">
-        <h2 class="product-modal-name">${escHtml(heroAplicacion)}</h2>
-      </div>` : ''}
       <div class="product-modal-tags">
         <div class="product-modal-tag">
           <span class="product-modal-tag-label">Marca</span>
@@ -508,30 +503,26 @@ function openDetalle(p) {
         <div class="sadar-equiv-list">
           ${crossReferences.map(cr => `
             <div class="sadar-equiv-item">
-              <span class="td-code">${escHtml(cr.code ?? '—')}</span>
               <span class="sadar-equiv-marca">${escHtml(cr.brandName ?? '—')}</span>
+              <span class="sadar-equiv-code">${escHtml(cr.code ?? '—')}</span>
             </div>`).join('')}
         </div>
       </div>` : ''}
       ${heroSupplier ? `
       <div class="sadar-section" style="margin-top:0">
-        <div class="sadar-section-label">Datos del proveedor</div>
+        <div class="sadar-section-label">Proveedor</div>
         <div class="sadar-dim-grid">
           <div class="sadar-dim-item">
             <span class="sadar-dim-label">Código prov.</span>
             <span class="sadar-dim-val">${escHtml(heroSupplier.supplierProductCode ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Moneda</span>
-            <span class="sadar-dim-val">${escHtml(heroSupplier.currency ?? '—')}</span>
+            <span class="sadar-dim-label">Aplicación</span>
+            <span class="sadar-dim-val">${escHtml(heroSupplier.application ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Activo</span>
-            <span class="sadar-dim-val">${boolBadge(heroSupplier.active)}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Creado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.createdAt))}</span>
+            <span class="sadar-dim-label">Stock</span>
+            <span class="sadar-dim-val">${escHtml(heroSupplier.stockSupplier ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
             <span class="sadar-dim-label">Actualizado</span>

@@ -69,7 +69,7 @@
     },
     {
       href: 'tienda.html',
-      label: 'Tienda Web',
+      label: 'Simulación Tienda Web',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M2 5l1-3h10l1 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M2 5h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>

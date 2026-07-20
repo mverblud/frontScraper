@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OV Suspensión · Presupuestos</title>
+  <title>OV Suspensión · Cotizador</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../src/styles/style.css" />
@@ -34,7 +34,7 @@
         <div class="breadcrumb">
           <span class="bc-root">Dashboard</span>
           <span class="bc-sep">/</span>
-          <span class="bc-current">Presupuestos</span>
+          <span class="bc-current">Cotizador</span>
         </div>
       </div>
       <div class="topbar-right">
@@ -70,7 +70,7 @@
 
       <div class="page-title">
         <div>
-          <h1>Presupuestos</h1>
+          <h1>Cotizador</h1>
           <p>Buscá en el catálogo Maestro y armá presupuestos para tus clientes.</p>
         </div>
       </div>
@@ -193,11 +193,11 @@
             </div>
           </div>
         </div>
-
         <div class="table-wrapper">
           <table id="products-table">
             <thead>
               <tr id="products-head-row"></tr>
+              <tr id="products-filter-row" class="filter-row"></tr>
             </thead>
             <tbody id="products-body"></tbody>
           </table>

@@ -612,6 +612,15 @@ th.sort-desc .arr-up   { opacity: 0.12; }
   outline: none; cursor: pointer; transition: border-color 0.12s;
 }
 .filter-select:focus { border-color: var(--brand); }
+.filter-input {
+  width: 100%; box-sizing: border-box;
+  padding: 4px 7px; font-size: 0.75rem; font-family: inherit;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  outline: none; transition: border-color 0.12s;
+}
+.filter-input:focus { border-color: var(--brand); }
+.filter-input::placeholder { color: var(--text-muted); }
 
 tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
 tbody tr:last-child { border-bottom: none; }
@@ -2329,6 +2338,14 @@ body.auth-body {
 /* colores en el slot del modal */
 .product-modal-metric-val.stock-yes { color: #22c55e; }
 .product-modal-metric-val.stock-no  { color: #ef4444; }
+
+/* Ubicación de estantería dentro del badge de stock propio */
+.stock-badge .stock-ubic { font-weight: 700; letter-spacing: .04em; }
+
+/* Fila con stock físico en el local: acento verde sutil (Presupuestos) */
+tr.row-stock-local > td { background: rgba(34, 197, 94, .06); }
+tr.row-stock-local > td:first-child { box-shadow: inset 3px 0 0 #22c55e; }
+tr.row-stock-local:hover > td { background: rgba(34, 197, 94, .11); }
 
 /* ── Tienda Web: grilla de cards (vista storefront) ────────────────────────── */
 .tienda-grid {

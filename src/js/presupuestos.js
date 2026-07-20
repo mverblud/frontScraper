@@ -33,8 +33,7 @@ const paginationControls = document.getElementById('pagination-controls');
 const detalleOverlay       = document.getElementById('detalle-modal-overlay');
 const detalleModal         = document.getElementById('detalle-modal');
 const detalleClose         = document.getElementById('detalle-modal-close');
-const detalleCode          = document.getElementById('detalle-modal-code');
-const detalleVariantsCount = document.getElementById('detalle-modal-variants-count');
+const detalleTitle         = document.getElementById('detalle-modal-title');
 const detalleBody          = document.getElementById('detalle-modal-body');
 const detalleAdd           = document.getElementById('detalle-modal-add');
 
@@ -78,7 +77,7 @@ const COLUMNS = [
   },
   {
     key: 'aplicacion', label: 'Aplicación', align: 'left',
-    sortable: true, hideable: true,
+    sortable: true, hideable: true, filter: 'text',
     sortValue: p => String(p.aplicacion ?? '')
   },
   {
@@ -154,12 +153,13 @@ const COLUMNS = [
 const SORT_ARROWS_SVG = `<svg class="sort-arrows" width="8" height="12" viewBox="0 0 8 12" fill="none" aria-hidden="true"><path class="arr-up" d="M4 1L1 5h6L4 1z"/><path class="arr-down" d="M4 11L1 7h6L4 11z"/></svg>`;
 
 // ── Estado ────────────────────────────────────────────────────────────────────
-let rawItems       = [];   // productos Maestro crudos de la página actual (para el modal de detalle)
-let allProducts     = [];  // productos adaptados a shape plano (para tabla y carrito)
+let rawItems       = [];   // productos Maestro crudos de TODA la búsqueda (para el modal de detalle)
+let allProducts     = [];  // productos adaptados a shape plano, TODA la búsqueda (para tabla y carrito)
 let totalItems      = 0;
 let currentPage      = 1;
 let pageSize         = parseInt(pageSizeSelect.value);
 let currentFilters   = { term: '', categoryId: '', brandId: '', position: '', side: '', year: '' };
+let filterAplicacion = ''; // filtro de texto client-side sobre la columna Aplicación
 
 let sortKey = 'marca';
 let sortDir = 'asc';
@@ -208,18 +208,17 @@ function fmtDate(val) {
   if (!val) return '—';
   const d = new Date(val);
   if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-function boolBadge(val, trueLabel = 'Sí', falseLabel = 'No') {
-  if (val === null || val === undefined) return '<span class="td-muted">—</span>';
-  const isTrue = !!val;
-  return `<span class="stock-badge ${isTrue ? 'stock-yes' : 'stock-no'}">${isTrue ? trueLabel : falseLabel}</span>`;
+  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 // Badge de stock combinado: prioriza el stock propio (local OV) sobre el del proveedor.
 function stockBadge(p) {
   const title = `Local: ${p.stockPropio ?? '—'} · Proveedor: ${p.stockProveedor ?? '—'}`;
   if (p.stockEstado === 'propio') {
-    return `<span class="stock-badge stock-propio" title="${escHtml(title)}"><span class="stock-dot"></span>Sí</span>`;
+    const ubic = p.ubicacion
+      ? ` · <span class="stock-ubic">${escHtml(p.ubicacion)}</span>`
+      : '';
+    const tt = p.ubicacion ? `${title} · Ubicación: ${p.ubicacion}` : title;
+    return `<span class="stock-badge stock-propio" title="${escHtml(tt)}"><span class="stock-dot"></span>Sí${ubic}</span>`;
   }
   if (p.stockEstado === 'proveedor') {
     return `<span class="stock-badge stock-proveedor" title="${escHtml(title)}"><span class="stock-dot"></span>Sí</span>`;
@@ -228,6 +227,14 @@ function stockBadge(p) {
     return `<span class="stock-badge stock-no" title="${escHtml(title)}">No</span>`;
   }
   return '<span class="td-muted">—</span>';
+}
+// Badge de stock puntual del proveedor (independiente del stock propio/local).
+function supplierStockBadge(stockSupplier) {
+  if (stockSupplier == null) return '<span class="td-muted">—</span>';
+  const has = stockSupplier === true || Number(stockSupplier) > 0;
+  return has
+    ? `<span class="stock-badge stock-proveedor"><span class="stock-dot"></span>Sí</span>`
+    : `<span class="stock-badge stock-no">No</span>`;
 }
 function setLoading(on) {
   btnBuscar.disabled = on;
@@ -272,6 +279,9 @@ function adaptProduct(p) {
     stockEstado = 'no';
   }
 
+  // Posición en estantería del local (ej. "A1"), solo relevante cuando hay stock propio.
+  const ubicacion = (p.ubication ?? '').toString().trim() || null;
+
   return {
     codigo: p.code ?? '—',
     aplicacion: p.application ?? p.description ?? supplier?.application ?? '—',
@@ -289,6 +299,7 @@ function adaptProduct(p) {
     stockPropio,
     stockProveedor,
     stockEstado,
+    ubicacion,
     _source: 'maestro',
     __raw: p
   };
@@ -370,6 +381,40 @@ function renderTableHead() {
 
     row.appendChild(th);
   });
+}
+
+// ── Fila de filtros por columna (discreta, debajo del header) ──────────────────
+function renderFilterRow() {
+  const row = document.getElementById('products-filter-row');
+  if (!row) return;
+  row.innerHTML = '';
+
+  COLUMNS.forEach(col => {
+    const th = document.createElement('th');
+    th.className = 'filter-cell';
+    th.dataset.col = col.key;
+
+    if (col.filter === 'text') {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'filter-aplicacion';
+      input.className = 'filter-input';
+      input.placeholder = 'Filtrar…';
+      input.autocomplete = 'off';
+      input.value = filterAplicacion;
+      input.addEventListener('input', () => {
+        filterAplicacion = input.value;
+        currentPage = 1;
+        renderPage();
+      });
+      input.addEventListener('click', e => e.stopPropagation());
+      th.appendChild(input);
+    }
+
+    row.appendChild(th);
+  });
+
+  applyColumnVisibility();
 }
 
 // ── Ordenamiento (sobre la página actual, sin volver a pedir al servidor) ──────
@@ -525,34 +570,54 @@ function runSearch() {
     year:       filtroYear.value.trim(),
   };
   currentPage = 1;
-  fetchPage();
+  filterAplicacion = '';
+  const filterInput = document.getElementById('filter-aplicacion');
+  if (filterInput) filterInput.value = '';
+  fetchAll();
 }
 
-async function fetchPage() {
-  const { term, categoryId, brandId, position, side, year } = currentFilters;
-  const params = new URLSearchParams();
+// Trae TODOS los resultados de la búsqueda (en tandas) para poder filtrar y paginar
+// del lado del cliente, igual que catalogo-nuevo.js.
+const FETCH_CHUNK_SIZE = 500;
 
-  if (term)       params.set('term', term);
-  if (categoryId) params.set('categoryId', categoryId);
-  if (brandId)    params.set('productBrandId', brandId);
-  if (position)   params.set('position', position);
-  if (side)       params.set('side', side);
-  if (year)       params.set('year', year);
-  params.set('page', currentPage);
-  params.set('limit', pageSize);
+async function fetchAll() {
+  const { term, categoryId, brandId, position, side, year } = currentFilters;
 
   setLoading(true);
   hideError();
 
   try {
-    const res = await fetch(`${API_BASE}/api/v1/products/search?${params.toString()}`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
-    const data = await res.json();
+    let all   = [];
+    let total = Infinity;
+    let page  = 1;
 
-    rawItems    = Array.isArray(data.products) ? data.products : [];
-    totalItems  = data.total ?? rawItems.length;
+    while (all.length < total) {
+      const params = new URLSearchParams();
+      if (term)       params.set('term', term);
+      if (categoryId) params.set('categoryId', categoryId);
+      if (brandId)    params.set('productBrandId', brandId);
+      if (position)   params.set('position', position);
+      if (side)       params.set('side', side);
+      if (year)       params.set('year', year);
+      params.set('page', page);
+      params.set('limit', FETCH_CHUNK_SIZE);
+
+      const res = await fetch(`${API_BASE}/api/v1/products/search?${params.toString()}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
+      const data = await res.json();
+
+      const lote = Array.isArray(data.products) ? data.products : [];
+      total = data.total ?? lote.length;
+      all   = all.concat(lote);
+      page += 1;
+
+      if (lote.length === 0) break; // corta si el servidor deja de devolver items
+    }
+
+    rawItems    = all;
+    totalItems  = total;
     allProducts = rawItems.map(adaptProduct);
     sortProducts();
 
@@ -568,16 +633,7 @@ async function fetchPage() {
     resultsQuery.textContent = parts.join(' · ');
 
     resultsSection.style.display = '';
-
-    if (allProducts.length === 0) {
-      productsTable.style.display = 'none';
-      tableFooter.style.display   = 'none';
-      noResults.style.display     = '';
-    } else {
-      productsTable.style.display = '';
-      noResults.style.display     = 'none';
-      renderPage();
-    }
+    renderPage();
   } catch (e) {
     hideResults();
     showError(e.message || 'No se pudo conectar con el servidor.');
@@ -586,14 +642,40 @@ async function fetchPage() {
   }
 }
 
-// ── Render tabla (una sola página del servidor por vez) ────────────────────────
+// ── Filtro client-side por Aplicación ───────────────────────────────────────────
+function getFilteredProducts() {
+  const q = filterAplicacion.trim().toLowerCase();
+  if (!q) return allProducts;
+  return allProducts.filter(p => String(p.aplicacion ?? '').toLowerCase().includes(q));
+}
+
+// ── Render tabla (paginación client-side sobre el resultado completo filtrado) ──
 function renderPage() {
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const filtered    = getFilteredProducts();
+  const total       = filtered.length;
+  const totalPages  = Math.ceil(total / pageSize) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
 
   productsBody.innerHTML = '';
-  allProducts.forEach(p => {
+
+  if (total === 0) {
+    productsTable.style.display = 'none';
+    tableFooter.style.display   = 'none';
+    noResults.style.display     = '';
+    applyColumnVisibility();
+    return;
+  }
+  productsTable.style.display = '';
+  noResults.style.display     = 'none';
+
+  const start = (currentPage - 1) * pageSize;
+  const end   = Math.min(start + pageSize, total);
+  const slice = filtered.slice(start, end);
+
+  slice.forEach(p => {
     const tr = document.createElement('tr');
     tr.style.cursor = 'pointer';
+    if (p.stockEstado === 'propio') tr.classList.add('row-stock-local');
 
     const codigo      = p.codigo         ?? '—';
     const desc        = p.aplicacion     ?? '—';
@@ -694,16 +776,14 @@ function renderPage() {
     productsBody.appendChild(tr);
   });
 
-  const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const end   = (currentPage - 1) * pageSize + allProducts.length;
-  paginationInfo.innerHTML = `Mostrando <strong>${start}–${end}</strong> de <strong>${totalItems}</strong>`;
+  paginationInfo.innerHTML = `Mostrando <strong>${start + 1}–${end}</strong> de <strong>${total}</strong>`;
   renderPaginationControls(totalPages);
-  tableFooter.style.display = totalItems > 0 ? '' : 'none';
+  tableFooter.style.display = total > 0 ? '' : 'none';
 
   applyColumnVisibility();
 }
 
-// ── Paginación (server-side: cada click pide una página nueva) ─────────────────
+// ── Paginación (client-side: recorre allProducts filtrado ya cargado) ──────────
 function renderPaginationControls(totalPages) {
   paginationControls.innerHTML = '';
   if (totalPages <= 1) return;
@@ -719,7 +799,7 @@ function renderPaginationControls(totalPages) {
     b.className = 'btn-page' + (active ? ' active' : '');
     b.disabled  = disabled;
     b.innerHTML = label;
-    if (!disabled) b.addEventListener('click', () => { currentPage = page; fetchPage(); });
+    if (!disabled) b.addEventListener('click', () => { currentPage = page; renderPage(); });
     return b;
   };
 
@@ -853,6 +933,7 @@ function updateCartUI() {
 // ── Modal detalle (rico, SADAR style, datos Maestro) ────────────────────────────
 function openDetalle(p) {
   const codigo = p.code ?? '—';
+  const adapted = adaptProduct(p);
 
   const images          = Array.isArray(p.images) ? p.images.slice() : [];
   const applications     = Array.isArray(p.applications) ? p.applications : [];
@@ -861,19 +942,18 @@ function openDetalle(p) {
   const dimensions       = p.dimensions && typeof p.dimensions === 'object' ? p.dimensions : {};
   const dimEntries       = Object.entries(dimensions).filter(([, v]) => v !== null && v !== undefined && v !== '');
 
-  detalleCode.textContent = codigo;
-  detalleVariantsCount.textContent = `${suppliers.length} proveedor${suppliers.length !== 1 ? 'es' : ''}`;
   detalleBody.innerHTML = '';
   detalleAdd.__rawProduct = p;
 
   const heroSupplier = suppliers.length > 0 ? suppliers[0] : null;
   const heroProdImg   = getPrimaryImageUrl(p);
   const heroSupImg    = heroSupplier?.imageUrl ?? '';
-  const heroAplicacion = heroSupplier?.application ?? '';
+  const productAplicacion = p.application ?? '';
+
+  detalleTitle.textContent = `${codigo}${productAplicacion ? ` - ${productAplicacion}` : ''}`;
   const heroMarca  = heroSupplier?.brand   ?? p.productBrand?.name ?? '—';
   const heroRubro  = heroSupplier?.section ?? p.category?.name    ?? '—';
   const heroFuente = heroSupplier?.supplierName ?? '—';
-  const heroStock  = heroSupplier?.stockSupplier ?? p.stock ?? null;
   const heroGanancia = (heroSupplier?.suggestedPrice != null && heroSupplier?.costWithIva != null)
     ? heroSupplier.suggestedPrice - heroSupplier.costWithIva
     : null;
@@ -882,15 +962,20 @@ function openDetalle(p) {
   heroSection.className = 'sadar-hero';
   heroSection.innerHTML = `
     <div class="sadar-hero-images">
-      ${heroProdImg ? `<img src="${escHtml(heroProdImg)}" alt="Producto ${escHtml(String(codigo))}" loading="lazy" onerror="this.style.display='none'"/>` : ''}
-      ${heroSupImg  ? `<img src="${escHtml(heroSupImg)}" alt="Proveedor ${escHtml(String(codigo))}" loading="lazy" onerror="this.style.display='none'"/>` : ''}
-      ${!heroProdImg && !heroSupImg ? '<span class="td-muted">Sin foto disponible</span>' : ''}
+      <div class="sadar-hero-image-block">
+        <span class="sadar-hero-image-label">Imagen BD</span>
+        <div class="sadar-hero-image-box">
+          ${heroProdImg ? `<img src="${escHtml(heroProdImg)}" alt="Producto ${escHtml(String(codigo))}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'td-muted',textContent:'Sin foto'}))"/>` : '<span class="td-muted">Sin foto</span>'}
+        </div>
+      </div>
+      <div class="sadar-hero-image-block">
+        <span class="sadar-hero-image-label">Imagen Proveedor</span>
+        <div class="sadar-hero-image-box">
+          ${heroSupImg ? `<img src="${escHtml(heroSupImg)}" alt="Proveedor ${escHtml(String(codigo))}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'td-muted',textContent:'Sin foto'}))"/>` : '<span class="td-muted">Sin foto</span>'}
+        </div>
+      </div>
     </div>
     <div class="sadar-hero-info">
-      ${heroAplicacion ? `
-      <div class="product-modal-header">
-        <h2 class="product-modal-name">${escHtml(heroAplicacion)}</h2>
-      </div>` : ''}
       <div class="product-modal-tags">
         <div class="product-modal-tag">
           <span class="product-modal-tag-label">Marca</span>
@@ -901,8 +986,8 @@ function openDetalle(p) {
           <span class="product-modal-tag-value">${escHtml(heroRubro)}</span>
         </div>
         <div class="product-modal-tag">
-          <span class="product-modal-tag-label">Fuente</span>
-          <span class="product-modal-tag-value">${escHtml(heroFuente)}</span>
+          <span class="product-modal-tag-label">Stock</span>
+          <span class="product-modal-tag-value">${stockBadge(adapted)}</span>
         </div>
       </div>
       ${heroSupplier ? `
@@ -917,7 +1002,6 @@ function openDetalle(p) {
           { label: 'Costo Neto',      val: heroSupplier.netCost      != null ? `$${fmtPrice(heroSupplier.netCost)}`      : '—' },
           { label: 'Margen',          val: heroSupplier.margin       != null ? fmtPercent(heroSupplier.margin)           : '—' },
           { label: 'Ganancia',        val: heroGanancia               != null ? `$${fmtPrice(heroGanancia)}`             : '—' },
-          { label: 'Stock',           val: heroStock                  != null ? escHtml(String(heroStock))               : '—' },
         ].map(m => `
           <div class="product-modal-metric-item${m.highlight ? ' highlight' : ''}">
             <span class="product-modal-metric-label">${m.label}</span>
@@ -943,30 +1027,30 @@ function openDetalle(p) {
         <div class="sadar-equiv-list">
           ${crossReferences.map(cr => `
             <div class="sadar-equiv-item">
-              <span class="td-code">${escHtml(cr.code ?? '—')}</span>
               <span class="sadar-equiv-marca">${escHtml(cr.brandName ?? '—')}</span>
+              <span class="sadar-equiv-code">${escHtml(cr.code ?? '—')}</span>
             </div>`).join('')}
         </div>
       </div>` : ''}
       ${heroSupplier ? `
       <div class="sadar-section" style="margin-top:0">
-        <div class="sadar-section-label">Datos del proveedor</div>
+        <div class="sadar-section-label">Proveedor</div>
         <div class="sadar-dim-grid">
+          <div class="sadar-dim-item">
+            <span class="sadar-dim-label">Nombre</span>
+            <span class="sadar-dim-val">${escHtml(heroFuente)}</span>
+          </div>
           <div class="sadar-dim-item">
             <span class="sadar-dim-label">Código prov.</span>
             <span class="sadar-dim-val">${escHtml(heroSupplier.supplierProductCode ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Moneda</span>
-            <span class="sadar-dim-val">${escHtml(heroSupplier.currency ?? '—')}</span>
+            <span class="sadar-dim-label">Aplicación</span>
+            <span class="sadar-dim-val">${escHtml(heroSupplier.application ?? '—')}</span>
           </div>
           <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Activo</span>
-            <span class="sadar-dim-val">${boolBadge(heroSupplier.active)}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Creado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.createdAt))}</span>
+            <span class="sadar-dim-label">Stock</span>
+            <span class="sadar-dim-val">${supplierStockBadge(heroSupplier.stockSupplier)}</span>
           </div>
           <div class="sadar-dim-item">
             <span class="sadar-dim-label">Actualizado</span>
@@ -1102,6 +1186,9 @@ btnLimpiar.addEventListener('click', () => {
   allProducts = [];
   totalItems = 0;
   currentPage = 1;
+  filterAplicacion = '';
+  const filterInput = document.getElementById('filter-aplicacion');
+  if (filterInput) filterInput.value = '';
   hideResults();
   hideError();
 });
@@ -1109,12 +1196,13 @@ btnLimpiar.addEventListener('click', () => {
 pageSizeSelect.addEventListener('change', () => {
   pageSize = parseInt(pageSizeSelect.value);
   currentPage = 1;
-  fetchPage();
+  renderPage();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadHiddenCols();
 renderTableHead();
+renderFilterRow();
 initColumnsMenu();
 populateYears();
 loadCart();

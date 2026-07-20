@@ -1,8 +1,9 @@
 /**
  * home.js — Lógica de la pantalla de inicio.
  *
- * Maneja el toggle de tema y pinta la card de estado del backend
- * suscribiéndose al resultado de health.js (sin un segundo fetch).
+ * Maneja el toggle de tema y pinta las cards de estado de los dos
+ * servicios: el BFF (suscribiéndose al resultado de health.js, sin un
+ * segundo fetch) y el servicio Maestro / PRODUCTOS_API (chequeo propio).
  */
 
 (function () {
@@ -26,11 +27,9 @@
 
   applyTheme(localStorage.getItem('theme') || 'dark');
 
-  // ── BACKEND STATUS CARD ─────────────────────────────────────────────────────
+  // ── BACKEND STATUS CARDS ─────────────────────────────────────────────────────
 
-  var statusCard = document.getElementById('backend-status-card');
-  var statusIcon = document.getElementById('backend-status-icon');
-  var statusMsg  = document.getElementById('backend-status-msg');
+  var MAESTRO_POLL_INTERVAL_MS = 30000;
 
   var ICON_CHECKING = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none">'
     + '<circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5"'
@@ -49,31 +48,60 @@
     + '<path d="M9 5.5V9.5M9 12h.01" stroke="currentColor" stroke-width="1.5"'
     + ' stroke-linecap="round"/></svg>';
 
-  function renderStatusCard(result) {
-    if (!statusCard) return;
+  function makeStatusRenderer(card, icon, msg, okText) {
+    return function renderStatusCard(result) {
+      if (!card) return;
 
-    statusCard.classList.remove('status-ok', 'status-error', 'status-checking');
+      card.classList.remove('status-ok', 'status-error', 'status-checking');
 
-    if (result === null || result === undefined) {
-      // health.js notifica null cuando empieza a verificar
-      statusCard.classList.add('status-checking');
-      if (statusIcon) statusIcon.innerHTML = ICON_CHECKING;
-      if (statusMsg)  statusMsg.textContent = 'Verificando conexión…';
-      return;
+      if (result === null || result === undefined) {
+        card.classList.add('status-checking');
+        if (icon) icon.innerHTML = ICON_CHECKING;
+        if (msg)  msg.textContent = 'Verificando conexión…';
+        return;
+      }
+
+      if (result.ok) {
+        card.classList.add('status-ok');
+        if (icon) icon.innerHTML = ICON_OK;
+        if (msg)  msg.textContent = okText;
+      } else {
+        card.classList.add('status-error');
+        if (icon) icon.innerHTML = ICON_ERROR;
+        var detail = result.status
+          ? ' (HTTP ' + result.status + ')'
+          : (result.error ? ': ' + result.error : '');
+        if (msg) msg.textContent = 'No se pudo conectar con el servidor' + detail + '.';
+      }
+    };
+  }
+
+  var renderBackendStatus = makeStatusRenderer(
+    document.getElementById('backend-status-card'),
+    document.getElementById('backend-status-icon'),
+    document.getElementById('backend-status-msg'),
+    'El backend está operativo y respondiendo correctamente.'
+  );
+
+  var renderMaestroStatus = makeStatusRenderer(
+    document.getElementById('maestro-status-card'),
+    document.getElementById('maestro-status-icon'),
+    document.getElementById('maestro-status-msg'),
+    'El servicio Maestro está operativo y respondiendo correctamente.'
+  );
+
+  // Chequeo propio para el servicio Maestro (no pasa por health.js: ese
+  // módulo solo verifica el BFF vía el badge del topbar).
+  async function checkMaestroHealth() {
+    renderMaestroStatus(null);
+    var result;
+    try {
+      var res = await fetch(window.ENV.PRODUCTOS_API + '/health');
+      result = res.ok ? { ok: true, status: res.status } : { ok: false, status: res.status };
+    } catch (e) {
+      result = { ok: false, error: e.message };
     }
-
-    if (result.ok) {
-      statusCard.classList.add('status-ok');
-      if (statusIcon) statusIcon.innerHTML = ICON_OK;
-      if (statusMsg)  statusMsg.textContent = 'El backend está operativo y respondiendo correctamente.';
-    } else {
-      statusCard.classList.add('status-error');
-      if (statusIcon) statusIcon.innerHTML = ICON_ERROR;
-      var detail = result.status
-        ? ' (HTTP ' + result.status + ')'
-        : (result.error ? ': ' + result.error : '');
-      if (statusMsg) statusMsg.textContent = 'No se pudo conectar con el servidor' + detail + '.';
-    }
+    renderMaestroStatus(result);
   }
 
   // ── Init ────────────────────────────────────────────────────────────────────
@@ -81,7 +109,12 @@
   function init() {
     // Suscribirse al resultado de health.js (sin doble fetch)
     if (window.health && window.health.onResult) {
-      window.health.onResult(renderStatusCard);
+      window.health.onResult(renderBackendStatus);
+    }
+
+    if (window.ENV && window.ENV.PRODUCTOS_API) {
+      checkMaestroHealth();
+      setInterval(checkMaestroHealth, MAESTRO_POLL_INTERVAL_MS);
     }
   }
 

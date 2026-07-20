@@ -209,32 +209,56 @@
 
       </div>
 
-      <!-- CARD DE ESTADO DEL BACKEND -->
-      <div class="backend-status-card status-checking" id="backend-status-card">
-        <div class="backend-status-icon" id="backend-status-icon">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5"
-              stroke-dasharray="25 25" stroke-linecap="round">
-              <animateTransform attributeName="transform" type="rotate"
-                from="0 10 10" to="360 10 10" dur="0.7s" repeatCount="indefinite"/>
-            </circle>
-          </svg>
+      <!-- CARDS DE ESTADO DE LOS SERVICIOS -->
+      <div class="backend-status-grid">
+
+        <div class="backend-status-card status-checking" id="backend-status-card">
+          <div class="backend-status-icon" id="backend-status-icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5"
+                stroke-dasharray="25 25" stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate"
+                  from="0 10 10" to="360 10 10" dur="0.7s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+          </div>
+          <div class="backend-status-info">
+            <div class="backend-status-title">Estado del servidor (BFF)</div>
+            <div class="backend-status-url" id="backend-status-url"></div>
+            <div class="backend-status-msg" id="backend-status-msg">Verificando conexión…</div>
+          </div>
         </div>
-        <div class="backend-status-info">
-          <div class="backend-status-title">Estado del servidor</div>
-          <div class="backend-status-url" id="backend-status-url"></div>
-          <div class="backend-status-msg" id="backend-status-msg">Verificando conexión…</div>
+
+        <div class="backend-status-card status-checking" id="maestro-status-card">
+          <div class="backend-status-icon" id="maestro-status-icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5"
+                stroke-dasharray="25 25" stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate"
+                  from="0 10 10" to="360 10 10" dur="0.7s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+          </div>
+          <div class="backend-status-info">
+            <div class="backend-status-title">Estado del servicio Maestro (API)</div>
+            <div class="backend-status-url" id="maestro-status-url"></div>
+            <div class="backend-status-msg" id="maestro-status-msg">Verificando conexión…</div>
+          </div>
         </div>
+
       </div>
 
     </main>
   </div>
 
   <script>
-    // Mostrar la URL del BFF en la card de estado
+    // Mostrar la URL de cada servicio en su card de estado
     document.addEventListener('DOMContentLoaded', function () {
-      var urlEl = document.getElementById('backend-status-url');
-      if (urlEl && window.ENV) urlEl.textContent = window.ENV.PRODUCTOS_BFF;
+      var bffUrlEl = document.getElementById('backend-status-url');
+      if (bffUrlEl && window.ENV) bffUrlEl.textContent = window.ENV.PRODUCTOS_BFF;
+
+      var apiUrlEl = document.getElementById('maestro-status-url');
+      if (apiUrlEl && window.ENV) apiUrlEl.textContent = window.ENV.PRODUCTOS_API;
     });
   </script>
   <script src="../src/js/sidebar.js" defer></script>

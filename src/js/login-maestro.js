@@ -1,10 +1,10 @@
 /**
  * login-maestro.js — Lógica de la página de acceso al Catálogo Maestro.
  *
- * - Si ya hay sesión Maestro activa, redirige a catalogo-maestro.html.
+ * - Si ya hay sesión Maestro activa, redirige a home.html.
  * - Envía las credenciales al servicio MS (PRODUCTOS_API) y, en caso de
  *   éxito, guarda el token con window.authMaestro.setSession() y redirige
- *   a catalogo-maestro.html.
+ *   a home.html.
  */
 
 (function () {
@@ -22,7 +22,7 @@
   // ── Redirección si ya está autenticado ────────────────────────────────────
 
   if (window.authMaestro && window.authMaestro.isAuthenticated()) {
-    window.location.replace('catalogo-maestro.html');
+    window.location.replace('home.html');
   }
 
   // ── Lógica del formulario ─────────────────────────────────────────────────
@@ -93,7 +93,7 @@
                 return;
               }
               window.authMaestro.setSession(token);
-              window.location.replace('catalogo-maestro.html');
+              window.location.replace('home.html');
             });
           } else if (res.status === 401) {
             showError('Email o contraseña incorrectos.');

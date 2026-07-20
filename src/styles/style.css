@@ -1729,6 +1729,11 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
 }
 
 /* ═══ HOME — BACKEND STATUS CARD ═════════════════════════════ */
+.backend-status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
 .backend-status-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-sm);
@@ -1758,6 +1763,7 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
 
 @media (max-width: 640px) {
   .menu-grid { grid-template-columns: 1fr 1fr; }
+  .backend-status-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 400px) {
   .menu-grid { grid-template-columns: 1fr; }

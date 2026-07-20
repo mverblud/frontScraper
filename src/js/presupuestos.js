@@ -228,6 +228,18 @@ function stockBadge(p) {
   }
   return '<span class="td-muted">—</span>';
 }
+// Badge de stock propio/local (independiente del stock del proveedor).
+function ownStockBadge(p) {
+  if (p.stockPropio == null) return '<span class="td-muted">—</span>';
+  if (p.stockPropio > 0) {
+    const ubic = p.ubicacion
+      ? ` · <span class="stock-ubic">${escHtml(p.ubicacion)}</span>`
+      : '';
+    const tt = p.ubicacion ? `Ubicación: ${p.ubicacion}` : '';
+    return `<span class="stock-badge stock-propio" title="${escHtml(tt)}"><span class="stock-dot"></span>Sí${ubic}</span>`;
+  }
+  return `<span class="stock-badge stock-no">No</span>`;
+}
 // Badge de stock puntual del proveedor (independiente del stock propio/local).
 function supplierStockBadge(stockSupplier) {
   if (stockSupplier == null) return '<span class="td-muted">—</span>';
@@ -987,7 +999,7 @@ function openDetalle(p) {
         </div>
         <div class="product-modal-tag">
           <span class="product-modal-tag-label">Stock</span>
-          <span class="product-modal-tag-value">${stockBadge(adapted)}</span>
+          <span class="product-modal-tag-value">${ownStockBadge(adapted)}</span>
         </div>
       </div>
       ${heroSupplier ? `

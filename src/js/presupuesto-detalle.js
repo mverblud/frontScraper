@@ -222,7 +222,7 @@ function buildPayload() {
       productId: i.productId,
       quantity: i.quantity,
       unitPrice: i.unitPrice,
-      discountType: 'PERCENTAGE',
+      discountType: i.descPct > 0 ? 'PERCENTAGE' : null,
       discountValue: i.descPct > 0 ? i.descPct : null
     })),
     customerName:  clienteNombreInput.value.trim(),
@@ -230,7 +230,7 @@ function buildPayload() {
     notes:         notasInput.value.trim(),
     expiresAt:     dateInputToISO(vencimientoInput.value),
     currency:      DEFAULT_CURRENCY,
-    discountType:  'PERCENTAGE',
+    discountType:  totalDescPct > 0 ? 'PERCENTAGE' : null,
     discountValue: totalDescPct > 0 ? totalDescPct : null
   };
 }

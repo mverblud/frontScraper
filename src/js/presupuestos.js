@@ -48,8 +48,9 @@ const drawerEmpty    = document.getElementById('drawer-empty');
 const cartItemsList  = document.getElementById('cart-items-list');
 const drawerTotals   = document.getElementById('drawer-totals');
 const totalFinal     = document.getElementById('total-final');
-const btnImprimir    = document.getElementById('btn-imprimir');
+const btnVerPresupuesto = document.getElementById('btn-ver-presupuesto');
 const btnClearCart   = document.getElementById('btn-clear-cart');
+const CLIENTE_STORAGE_KEY = 'ov_presupuesto_cliente';
 
 // Theme
 const themeToggle = document.getElementById('theme-toggle');
@@ -295,6 +296,7 @@ function adaptProduct(p) {
   const ubicacion = (p.ubication ?? '').toString().trim() || null;
 
   return {
+    productId: p.id ?? null,
     codigo: p.code ?? '—',
     aplicacion: p.application ?? p.description ?? supplier?.application ?? '—',
     marca: p.productBrand?.name ?? '—',
@@ -319,6 +321,7 @@ function adaptProduct(p) {
 
 function normalizeProduct(p) {
   return {
+    productId: p.productId ?? null,
     codigo: p.codigo ?? '—',
     nombre: p.aplicacion ?? '—',
     marca: p.marca ?? '—',
@@ -884,7 +887,7 @@ function updateCartUI() {
 
   drawerEmpty.style.display  = entries.length === 0 ? '' : 'none';
   drawerTotals.style.display = entries.length > 0 ? '' : 'none';
-  btnImprimir.style.display  = entries.length > 0 ? '' : 'none';
+  btnVerPresupuesto.style.display = entries.length > 0 ? '' : 'none';
 
   cartItemsList.innerHTML = '';
   let totalSum = 0;
@@ -1154,30 +1157,17 @@ function closeDrawer() {
   document.body.style.overflow = '';
 }
 
-// ── Imprimir ───────────────────────────────────────────────────
-btnImprimir.addEventListener('click', () => {
-  const printDate = document.getElementById('print-date');
-  if (printDate) {
-    const now = new Date();
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    printDate.textContent = `Fecha: ${now.toLocaleDateString('es-AR', options)}`;
-  }
-  const printItemsCount = document.getElementById('print-items-count');
-  if (printItemsCount) {
-    const entries = Object.entries(cart);
-    const count = entries.reduce((s, [, i]) => s + i.qty, 0);
-    printItemsCount.textContent = `· ${count} producto${count !== 1 ? 's' : ''}`;
-  }
+// ── Ver presupuesto (navega a la pantalla de detalle/generación) ───────────────
+btnVerPresupuesto.addEventListener('click', () => {
   const nombreInput = document.getElementById('cliente-nombre');
-  const nombrePrint = document.getElementById('cliente-nombre-print');
-  if (nombrePrint) nombrePrint.textContent = nombreInput ? nombreInput.value.trim() : '';
-
-  const telInput = document.getElementById('cliente-tel');
-  const telPrint = document.getElementById('cliente-tel-print');
-  if (telPrint) telPrint.textContent = telInput ? telInput.value.trim() : '';
-
-  openDrawer();
-  setTimeout(() => window.print(), 100);
+  const telInput    = document.getElementById('cliente-tel');
+  try {
+    localStorage.setItem(CLIENTE_STORAGE_KEY, JSON.stringify({
+      nombre:    nombreInput ? nombreInput.value.trim() : '',
+      telefono:  telInput    ? telInput.value.trim()    : ''
+    }));
+  } catch (_) {}
+  window.location.href = 'presupuesto-detalle.html';
 });
 
 // ── Eventos de búsqueda ───────────────────────────────────────────────────────

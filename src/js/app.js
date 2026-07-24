@@ -1,5 +1,4 @@
 const API_BASE = window.ENV.PRODUCTOS_BFF;
-const CART_STORAGE_KEY = 'ov_presupuesto';
 const HIDDEN_COLS_KEY  = 'ov_rm_hidden_cols';
 
 // ── Definición de columnas ─────────────────────────────────────────────────────
@@ -81,10 +80,6 @@ const COLUMNS = [
     key: 'stock', label: 'Stock', align: 'center',
     sortable: true, hideable: true,
     sortValue: p => p.hayStock === true ? 1 : 0
-  },
-  {
-    key: 'agregar', label: 'Agregar', align: 'center',
-    sortable: false, hideable: false
   }
 ];
 
@@ -133,7 +128,6 @@ const productModalCostoNeto= document.getElementById('product-modal-costo-neto')
 const productModalMargen  = document.getElementById('product-modal-margen');
 const productModalGanancia= document.getElementById('product-modal-ganancia');
 const productModalStock   = document.getElementById('product-modal-stock');
-const productModalAdd     = document.getElementById('product-modal-add');
 
 // Catalog modal
 const catalogModalOverlay = document.getElementById('catalog-modal-overlay');
@@ -142,20 +136,6 @@ const catalogModalClose   = document.getElementById('catalog-modal-close');
 const catalogModalCode    = document.getElementById('catalog-modal-code');
 const catalogModalName    = document.getElementById('catalog-modal-name');
 const catalogModalBody    = document.getElementById('catalog-modal-body');
-
-// Drawer / carrito
-const cartBtn        = document.getElementById('cart-btn');
-const cartCount      = document.getElementById('cart-count');
-const drawer         = document.getElementById('drawer');
-const drawerOverlay  = document.getElementById('drawer-overlay');
-const drawerClose    = document.getElementById('drawer-close');
-const drawerCount    = document.getElementById('drawer-count');
-const drawerEmpty    = document.getElementById('drawer-empty');
-const cartItemsList  = document.getElementById('cart-items-list');
-const drawerTotals   = document.getElementById('drawer-totals');
-const totalFinal     = document.getElementById('total-final');
-const btnImprimir    = document.getElementById('btn-imprimir');
-const btnClearCart   = document.getElementById('btn-clear-cart');
 
 // Theme
 const themeToggle = document.getElementById('theme-toggle');
@@ -168,33 +148,6 @@ let pageSize    = parseInt(pageSizeSelect.value);
 let sortKey = 'marca';
 let sortDir = 'asc';
 let hiddenCols = new Set();
-
-// carrito compartido: { [key]: { product, qty } }
-let cart = {};
-
-// ── Persistencia carrito ──────────────────────────────────────────────────────
-function saveCart() {
-  try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)); } catch (_) {}
-}
-function loadCart() {
-  try {
-    const raw = localStorage.getItem(CART_STORAGE_KEY);
-    if (raw) cart = JSON.parse(raw);
-  } catch (_) { cart = {}; }
-}
-
-// ── Normalizar producto RM ────────────────────────────────────────────────────
-function normalizeRmProduct(p) {
-  return {
-    codigo: p.codigo ?? '—',
-    nombre: p.aplicacion ?? '—',
-    marca: p.marca ?? '—',
-    rubro: p.rubro ?? '—',
-    foto: p.imagen ?? '',
-    precioVenta: p.precioSugerido ?? 0,
-    _source: 'rm'
-  };
-}
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
@@ -673,8 +626,6 @@ function renderPage() {
     const gananciaCell = ganancia != null
       ? `<span class="ganancia-wrap"><span class="ganancia-indicator ${gananciaIndicatorClass}" title="${gananciaIndicatorTitle}">${gananciaIndicatorIcon}</span><span class="price-symbol">$</span>${gananciaStr}</span>`
       : '—';
-    const cartKey    = `rm:${codigo}`;
-    const inCart     = !!cart[cartKey];
     const catalogo   = p.catalog ?? p.catalogo ?? null;
     const hasCatalogo = Array.isArray(catalogo) && catalogo.length > 0;
 
@@ -703,26 +654,7 @@ function renderPage() {
       <td class="td-stock" data-col="stock" style="text-align:center">
         <span class="stock-badge ${hayStock ? 'stock-yes' : 'stock-no'}">${hayStock ? 'Sí' : 'No'}</span>
       </td>
-      <td class="td-add" data-col="agregar">
-        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
-                title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
-                aria-label="${inCart ? 'Quitar' : 'Agregar'}">
-          ${inCart
-            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
-          }
-        </button>
-      </td>
     `;
-
-    // Toggle agregar/quitar del carrito
-    const addBtn = tr.querySelector('.btn-add');
-    addBtn.__product = p;
-    addBtn.addEventListener('click', function() {
-      const key = this.dataset.key;
-      if (cart[key]) removeFromCart(key);
-      else addToCart(this.__product);
-    });
 
     // Código clickeable cuando hay catálogo
     const codeSpan = tr.querySelector('.td-code.has-catalog');
@@ -789,115 +721,6 @@ function buildPageRange(current, total) {
   return [1,'…',current-1,current,current+1,'…',total];
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ── CARRITO / PRESUPUESTO ──────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════
-
-function addToCart(product) {
-  const normalized = normalizeRmProduct(product);
-  const key = `rm:${normalized.codigo}`;
-  if (cart[key]) {
-    cart[key].qty += 1;
-  } else {
-    cart[key] = { product: normalized, qty: 1 };
-  }
-  saveCart();
-  updateCartUI();
-  renderPage();
-}
-
-function removeFromCart(key) {
-  delete cart[key];
-  saveCart();
-  updateCartUI();
-  renderPage();
-}
-
-function changeQty(key, delta) {
-  if (!cart[key]) return;
-  cart[key].qty = Math.max(1, cart[key].qty + delta);
-  saveCart();
-  updateCartUI();
-}
-
-function clearCart() {
-  cart = {};
-  saveCart();
-  updateCartUI();
-  renderPage();
-}
-
-function updateCartUI() {
-  const entries = Object.entries(cart);
-  const count   = entries.reduce((s, [, i]) => s + i.qty, 0);
-
-  // Badge en botón topbar
-  cartCount.textContent = count;
-  cartCount.style.display = count > 0 ? '' : 'none';
-
-  // Badge en drawer
-  drawerCount.textContent = `${count} producto${count !== 1 ? 's' : ''}`;
-
-  // Empty state
-  drawerEmpty.style.display    = entries.length === 0 ? '' : 'none';
-  drawerTotals.style.display   = entries.length > 0 ? '' : 'none';
-  btnImprimir.style.display    = entries.length > 0 ? '' : 'none';
-
-  // Render items
-  cartItemsList.innerHTML = '';
-  let totalSum = 0;
-  
-  entries.forEach(([key, { product, qty }]) => {
-    const codigo = product.codigo ?? '—';
-    const desc   = product.nombre ?? '—';
-    const marca  = product.marca ?? '';
-    const pVenta = Number(product.precioVenta) || 0;
-    const subtotal = pVenta * qty;
-    totalSum += subtotal;
-
-    const sourceTag = product._source === 'rm' ? 'RM' : product._source === 'asm' ? 'ASM' : '';
-
-    const div = document.createElement('div');
-    div.className = 'cart-item';
-    div.innerHTML = `
-      <div class="cart-item-info">
-        <span class="cart-item-code">${sourceTag ? `<span class="cart-item-provider" style="opacity:.5">[${escHtml(sourceTag)}]</span> ` : ''}${escHtml(String(codigo))}</span>
-        <div class="cart-item-desc" title="${escHtml(String(desc))}">${escHtml(String(desc))}</div>
-        <div class="cart-item-sub">${escHtml(marca)} · $${fmtPrice(pVenta)}</div>
-      </div>
-      <div class="cart-item-controls">
-        <div class="qty-control">
-          <button class="qty-btn" data-action="dec" data-key="${escHtml(key)}">−</button>
-          <span class="qty-val">${qty}</span>
-          <button class="qty-btn" data-action="inc" data-key="${escHtml(key)}">+</button>
-        </div>
-        <span class="cart-item-qty-print print-only">${qty}</span>
-        <span class="cart-item-unit-print print-only">$${fmtPrice(pVenta)}</span>
-        <span class="cart-item-price">$${fmtPrice(subtotal)}</span>
-        <button class="cart-item-remove" data-key="${escHtml(key)}">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          Quitar
-        </button>
-      </div>
-    `;
-
-    div.querySelectorAll('.qty-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        const delta = b.dataset.action === 'inc' ? 1 : -1;
-        changeQty(b.dataset.key, delta);
-      });
-    });
-    div.querySelector('.cart-item-remove').addEventListener('click', function() {
-      removeFromCart(this.dataset.key);
-    });
-
-    cartItemsList.appendChild(div);
-  });
-
-  // Actualizar total
-  totalFinal.textContent = `$${fmtPrice(totalSum)}`;
-}
-
 // ── Helpers de badge ──────────────────────────────────────────
 function getBrandColorClass(brandName) {
   const normalized = String(brandName ?? 'sin-marca').trim().toLowerCase();
@@ -954,8 +777,6 @@ function openProductModal(p) {
     productModalNoPhoto.classList.add('visible');
   }
 
-  productModalAdd.__product = p;
-
   productModalOverlay.classList.add('open');
   productModal.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -971,10 +792,6 @@ productModalClose.addEventListener('click', closeProductModal);
 productModalOverlay.addEventListener('click', closeProductModal);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeProductModal(); closeCatalogModal(); }
-});
-productModalAdd.addEventListener('click', function() {
-  if (this.__product) addToCart(this.__product);
-  closeProductModal();
 });
 
 // ── Catalog Modal ──────────────────────────────────────────────
@@ -1058,52 +875,6 @@ function closeCatalogModal() {
 catalogModalClose.addEventListener('click', closeCatalogModal);
 catalogModalOverlay.addEventListener('click', e => { if (e.target === catalogModalOverlay) closeCatalogModal(); });
 
-// ── Drawer open/close ──────────────────────────────────────────
-cartBtn.addEventListener('click', openDrawer);
-drawerClose.addEventListener('click', closeDrawer);
-drawerOverlay.addEventListener('click', closeDrawer);
-btnClearCart.addEventListener('click', () => { if (confirm('¿Vaciar el presupuesto?')) clearCart(); });
-
-function openDrawer() {
-  drawer.classList.add('open');
-  drawerOverlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeDrawer() {
-  drawer.classList.remove('open');
-  drawerOverlay.classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-// ── Imprimir ───────────────────────────────────────────────────
-btnImprimir.addEventListener('click', () => {
-  // Establecer fecha actual
-  const printDate = document.getElementById('print-date');
-  if (printDate) {
-    const now = new Date();
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    printDate.textContent = `Fecha: ${now.toLocaleDateString('es-AR', options)}`;
-  }
-  // Establecer cantidad de productos
-  const printItemsCount = document.getElementById('print-items-count');
-  if (printItemsCount) {
-    const entries = Object.entries(cart);
-    const count = entries.reduce((s, [, i]) => s + i.qty, 0);
-    printItemsCount.textContent = `· ${count} producto${count !== 1 ? 's' : ''}`;
-  }
-  // Poblar campos de cliente en los spans print-only
-  const nombreInput = document.getElementById('cliente-nombre');
-  const nombrePrint = document.getElementById('cliente-nombre-print');
-  if (nombrePrint) nombrePrint.textContent = nombreInput ? nombreInput.value.trim() : '';
-
-  const telInput = document.getElementById('cliente-tel');
-  const telPrint = document.getElementById('cliente-tel-print');
-  if (telPrint) telPrint.textContent = telInput ? telInput.value.trim() : '';
-
-  openDrawer();
-  setTimeout(() => window.print(), 100);
-});
-
 // ── Helpers ───────────────────────────────────────────────────
 function fmtPrice(val) {
   return Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1132,5 +903,3 @@ loadHiddenCols();
 renderTableHead();
 initColumnsMenu();
 init();
-loadCart();
-updateCartUI();

@@ -1,5 +1,4 @@
 const API_BASE = window.ENV.PRODUCTOS_BFF;
-const CART_STORAGE_KEY = 'ov_presupuesto';
 const HIDDEN_COLS_KEY  = 'ov_asm_hidden_cols';
 
 // ── Definición de columnas ─────────────────────────────────────────────────────
@@ -81,10 +80,6 @@ const COLUMNS = [
     key: 'stock', label: 'Stock', align: 'center',
     sortable: true, hideable: true,
     sortValue: p => p.stock ?? null
-  },
-  {
-    key: 'agregar', label: 'Agregar', align: 'center',
-    sortable: false, hideable: false
   }
 ];
 
@@ -198,21 +193,6 @@ const productModalCostoNeto= document.getElementById('product-modal-costo-neto')
 const productModalMargen  = document.getElementById('product-modal-margen');
 const productModalGanancia= document.getElementById('product-modal-ganancia');
 const productModalStock   = document.getElementById('product-modal-stock');
-const productModalAdd     = document.getElementById('product-modal-add');
-
-// Drawer / carrito
-const cartBtn        = document.getElementById('cart-btn');
-const cartCount      = document.getElementById('cart-count');
-const drawer         = document.getElementById('drawer');
-const drawerOverlay  = document.getElementById('drawer-overlay');
-const drawerClose    = document.getElementById('drawer-close');
-const drawerCount    = document.getElementById('drawer-count');
-const drawerEmpty    = document.getElementById('drawer-empty');
-const cartItemsList  = document.getElementById('cart-items-list');
-const drawerTotals   = document.getElementById('drawer-totals');
-const totalFinal     = document.getElementById('total-final');
-const btnImprimir    = document.getElementById('btn-imprimir');
-const btnClearCart   = document.getElementById('btn-clear-cart');
 
 // Theme
 const themeToggle = document.getElementById('theme-toggle');
@@ -228,33 +208,6 @@ let pageSize    = parseInt(pageSizeSelect.value);
 let sortKey = 'marca';
 let sortDir = 'asc';
 let hiddenCols = new Set();
-
-// carrito compartido: { [key]: { product, qty } }
-let cart = {};
-
-// ── Persistencia carrito ──────────────────────────────────────────────────────
-function saveCart() {
-  try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)); } catch (_) {}
-}
-function loadCart() {
-  try {
-    const raw = localStorage.getItem(CART_STORAGE_KEY);
-    if (raw) cart = JSON.parse(raw);
-  } catch (_) { cart = {}; }
-}
-
-// ── Normalizar producto ASM ───────────────────────────────────────────────────
-function normalizeAsmProduct(p) {
-  return {
-    codigo: p.codigo ?? '—',
-    nombre: p.aplicacion ?? '—',
-    marca: p.marca ?? 'Sin marca',
-    rubro: p.rubro ?? '—',
-    foto: p.imagen ?? '',
-    precioVenta: p.precioSugerido ?? 0,
-    _source: 'asm'
-  };
-}
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
@@ -553,8 +506,6 @@ function renderPage() {
       : '—';
 
     const stockClass = stock > 0 ? 'stock-ok' : 'stock-zero';
-    const cartKey = `asm:${codigo}`;
-    const inCart  = !!cart[cartKey];
 
     tr.innerHTML = `
       <td class="td-foto" data-col="foto">
@@ -574,25 +525,7 @@ function renderPage() {
       <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${escHtml(precioVentaStr)}</td>
       <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
       <td class="td-stock ${stockClass}" data-col="stock" style="text-align:center;font-weight:600">${stock}</td>
-      <td class="td-add" data-col="agregar">
-        <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
-                title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
-                aria-label="${inCart ? 'Quitar' : 'Agregar'}">
-          ${inCart
-            ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-            : `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
-          }
-        </button>
-      </td>
     `;
-
-    const addBtn = tr.querySelector('.btn-add');
-    addBtn.__product = p;
-    addBtn.addEventListener('click', function() {
-      const key = this.dataset.key;
-      if (cart[key]) removeFromCart(key);
-      else addToCart(this.__product);
-    });
 
     // Click en foto → abrir modal
     const thumb = tr.querySelector('.product-thumb');
@@ -652,113 +585,6 @@ function buildPageRange(current, total) {
   return [1,'…',current-1,current,current+1,'…',total];
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ── CARRITO / PRESUPUESTO ──────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════
-
-function addToCart(product) {
-  const normalized = normalizeAsmProduct(product);
-  const key = `asm:${normalized.codigo}`;
-  if (cart[key]) {
-    cart[key].qty += 1;
-  } else {
-    cart[key] = { product: normalized, qty: 1 };
-  }
-  saveCart();
-  updateCartUI();
-  renderPage();
-}
-
-function removeFromCart(key) {
-  delete cart[key];
-  saveCart();
-  updateCartUI();
-  renderPage();
-}
-
-function changeQty(key, delta) {
-  if (!cart[key]) return;
-  cart[key].qty = Math.max(1, cart[key].qty + delta);
-  saveCart();
-  updateCartUI();
-}
-
-function clearCart() {
-  cart = {};
-  saveCart();
-  updateCartUI();
-  renderPage();
-}
-
-function updateCartUI() {
-  const entries = Object.entries(cart);
-  const count   = entries.reduce((s, [, i]) => s + i.qty, 0);
-
-  cartCount.textContent = count;
-  cartCount.style.display = count > 0 ? '' : 'none';
-
-  drawerCount.textContent = `${count} producto${count !== 1 ? 's' : ''}`;
-
-  drawerEmpty.style.display  = entries.length === 0 ? '' : 'none';
-  drawerTotals.style.display = entries.length > 0 ? '' : 'none';
-  btnImprimir.style.display  = entries.length > 0 ? '' : 'none';
-
-  cartItemsList.innerHTML = '';
-  let totalSum = 0;
-
-  entries.forEach(([key, { product, qty }]) => {
-    const codigo = product.codigo ?? '—';
-    const desc   = product.nombre ?? '—';
-    const marca  = product.marca ?? '';
-    const pVenta = Number(product.precioVenta) || 0;
-    const subtotal = pVenta * qty;
-    totalSum += subtotal;
-
-    const sourceTag = product._source === 'rm' ? 'RM' : product._source === 'asm' ? 'ASM' : '';
-
-    const div = document.createElement('div');
-    div.className = 'cart-item';
-    div.innerHTML = `
-      <div class="cart-item-info">
-        <div class="cart-item-header">
-          <span class="cart-item-code">${escHtml(String(codigo))}</span>
-          ${sourceTag ? `<span class="cart-item-provider">[${escHtml(sourceTag)}]</span>` : ''}
-          <span class="cart-item-desc">${escHtml(String(desc))}</span>
-          <span class="cart-item-marca">${escHtml(marca)}</span>
-        </div>
-      </div>
-      <div class="cart-item-controls">
-        <div class="qty-control">
-          <button class="qty-btn" data-action="dec" data-key="${escHtml(key)}">−</button>
-          <span class="qty-val">${qty}</span>
-          <button class="qty-btn" data-action="inc" data-key="${escHtml(key)}">+</button>
-        </div>
-        <span class="cart-item-qty-print print-only">${qty}</span>
-        <span class="cart-item-unit-print print-only">$${formatPrice(pVenta)}</span>
-        <span class="cart-item-price">$${formatPrice(subtotal)}</span>
-        <button class="cart-item-remove" data-key="${escHtml(key)}">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          Quitar
-        </button>
-      </div>
-    `;
-
-    div.querySelectorAll('.qty-btn').forEach(b => {
-      b.addEventListener('click', () => {
-        const delta = b.dataset.action === 'inc' ? 1 : -1;
-        changeQty(b.dataset.key, delta);
-      });
-    });
-    div.querySelector('.cart-item-remove').addEventListener('click', function() {
-      removeFromCart(this.dataset.key);
-    });
-
-    cartItemsList.appendChild(div);
-  });
-
-  totalFinal.textContent = `$${formatPrice(totalSum)}`;
-}
-
 // ── Helpers de badge ──────────────────────────────────────────
 function getBrandColorClass(brandName) {
   const normalized = String(brandName ?? 'sin-marca').trim().toLowerCase();
@@ -813,8 +639,6 @@ function openProductModal(p) {
     productModalNoPhoto.classList.add('visible');
   }
 
-  productModalAdd.__product = p;
-
   productModalOverlay.classList.add('open');
   productModal.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -829,54 +653,6 @@ function closeProductModal() {
 productModalClose.addEventListener('click', closeProductModal);
 productModalOverlay.addEventListener('click', closeProductModal);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProductModal(); });
-productModalAdd.addEventListener('click', function() {
-  if (this.__product) addToCart(this.__product);
-  closeProductModal();
-});
-
-// ── Drawer open/close ──────────────────────────────────────────
-cartBtn.addEventListener('click', openDrawer);
-drawerClose.addEventListener('click', closeDrawer);
-drawerOverlay.addEventListener('click', closeDrawer);
-btnClearCart.addEventListener('click', () => { if (confirm('¿Vaciar el presupuesto?')) clearCart(); });
-
-function openDrawer() {
-  drawer.classList.add('open');
-  drawerOverlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeDrawer() {
-  drawer.classList.remove('open');
-  drawerOverlay.classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-// ── Imprimir ───────────────────────────────────────────────────
-btnImprimir.addEventListener('click', () => {
-  const printDate = document.getElementById('print-date');
-  if (printDate) {
-    const now = new Date();
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    printDate.textContent = `Fecha: ${now.toLocaleDateString('es-AR', options)}`;
-  }
-  const printItemsCount = document.getElementById('print-items-count');
-  if (printItemsCount) {
-    const entries = Object.entries(cart);
-    const count = entries.reduce((s, [, i]) => s + i.qty, 0);
-    printItemsCount.textContent = `· ${count} producto${count !== 1 ? 's' : ''}`;
-  }
-  // Poblar campos de cliente en los spans print-only
-  const nombreInput = document.getElementById('cliente-nombre');
-  const nombrePrint = document.getElementById('cliente-nombre-print');
-  if (nombrePrint) nombrePrint.textContent = nombreInput ? nombreInput.value.trim() : '';
-
-  const telInput = document.getElementById('cliente-tel');
-  const telPrint = document.getElementById('cliente-tel-print');
-  if (telPrint) telPrint.textContent = telInput ? telInput.value.trim() : '';
-
-  openDrawer();
-  setTimeout(() => window.print(), 100);
-});
 
 // ── Helpers ───────────────────────────────────────────────────
 function escHtml(str) {
@@ -910,5 +686,3 @@ loadHiddenCols();
 renderTableHead();
 initColumnsMenu();
 loadRubros();
-loadCart();
-updateCartUI();

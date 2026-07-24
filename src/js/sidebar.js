@@ -114,6 +114,15 @@
         <path d="M12.2 2.5v2.3h-2.3M3.8 13.5v-2.3h2.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`,
     },
+    {
+      href: 'historial-precios.html',
+      label: 'Historial de Verificación',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 3.2v4l2.6 1.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8" cy="8" r="5.8" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M11.8 11.8l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
   ];
 
   function normalizeRoleLabel(role) {

@@ -21,13 +21,42 @@
       </svg>`,
     },
     {
+      href: 'presupuestos.html',
+      label: 'Cotizador',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5.5 4.8h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.5 8h1.6M8.2 8h1.6M10.9 8h.1M5.5 10.6h1.6M8.2 10.6h1.6M10.9 10.6h.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
       href: 'catalogo-nuevo.html',
-      label: 'Catálogo Unificado',
+      label: 'Cotizador Unificado',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="3" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.5"/>
         <rect x="8.5" y="7.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.5"/>
         <path d="M7.5 6h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M8 6.5v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      href: 'index.html',
+      label: 'Cotizador RM',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <ellipse cx="8" cy="3.5" rx="4.5" ry="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3.5 3.5v6c0 1.1 2 2 4.5 2s4.5-.9 4.5-2v-6" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3.5 6.5c0 1.1 2 2 4.5 2s4.5-.9 4.5-2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10.2 12.2l3.1 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      href: 'catalogo-asm.html',
+      label: 'Cotizador ASM',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6.2 5.9l2.1 2.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.8 8.1l2.4-2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
     {
@@ -39,26 +68,6 @@
         <rect x="2.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
         <path d="M8.5 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M8.5 13h3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>`,
-    },
-    {
-      href: 'index.html',
-      label: 'Catálogo RM',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <ellipse cx="8" cy="3.5" rx="4.5" ry="2" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M3.5 3.5v6c0 1.1 2 2 4.5 2s4.5-.9 4.5-2v-6" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M3.5 6.5c0 1.1 2 2 4.5 2s4.5-.9 4.5-2" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M10.2 12.2l3.1 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>`,
-    },
-    {
-      href: 'catalogo-asm.html',
-      label: 'Catálogo ASM',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M6.2 5.9l2.1 2.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M5.8 8.1l2.4-2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
     {
@@ -88,15 +97,6 @@
       </svg>`,
     },
     {
-      href: 'presupuestos.html',
-      label: 'Cotizador',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M5.5 4.8h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M5.5 8h1.6M8.2 8h1.6M10.9 8h.1M5.5 10.6h1.6M8.2 10.6h1.6M10.9 10.6h.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>`,
-    },
-    {
       href: 'presupuestos-lista.html',
       label: 'Presupuestos',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -104,6 +104,14 @@
         <path d="M10 2v3h3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
         <path d="M5 8.5l1.2 1.2L8.8 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M9.6 8h1.8M9.6 10.4h1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      href: 'actualizacion-precios.html',
+      label: 'Verificación de Precios',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 8a6 6 0 0110.5-3.9M14 8a6 6 0 01-10.5 3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12.2 2.5v2.3h-2.3M3.8 13.5v-2.3h2.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`,
     },
   ];

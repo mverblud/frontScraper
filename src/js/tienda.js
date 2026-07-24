@@ -61,34 +61,29 @@ function fmtPrice(val) {
   return Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function fmtPercent(val) {
-  return `${Number(val).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
-}
-
-function fmtDate(val) {
-  if (!val) return '—';
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
 function boolBadge(val, trueLabel = 'Sí', falseLabel = 'No') {
   if (val === null || val === undefined) return '<span class="td-muted">—</span>';
   const isTrue = !!val;
   return `<span class="stock-badge ${isTrue ? 'stock-yes' : 'stock-no'}">${isTrue ? trueLabel : falseLabel}</span>`;
 }
 
-// Devuelve la URL de la imagen principal del producto: la marcada isPrimary,
-// o si no hay ninguna, la de menor displayOrder.
-function getPrimaryImageUrl(p) {
-  const images = Array.isArray(p.images) ? p.images.slice() : [];
-  if (images.length === 0) return '';
-  images.sort((a, b) => {
-    if (a.isPrimary && !b.isPrimary) return -1;
-    if (!a.isPrimary && b.isPrimary) return 1;
-    return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
-  });
-  return images[0].url ?? '';
+// Devuelve la URL de imagen a mostrar: la primera de images[], y si no hay
+// ninguna, la del proveedor (supplier.imageUrl). Si no hay nada, string vacío.
+function getDisplayImage(p) {
+  const images = Array.isArray(p.images) ? p.images : [];
+  const fromImages = images.find(img => img && img.url)?.url;
+  if (fromImages) return fromImages;
+  return p.supplier?.imageUrl || '';
+}
+
+// Disponibilidad transparente para el cliente: alcanza con que el stock
+// propio (p.stock) o el del proveedor (p.supplier.stockSupplier) esté OK.
+// Devuelve true/false, o null si no hay ningún dato de stock.
+function getStockStatus(p) {
+  const hasOwn      = p.stock !== null && p.stock !== undefined;
+  const hasSupplier = p.supplier?.stockSupplier !== null && p.supplier?.stockSupplier !== undefined;
+  if (!hasOwn && !hasSupplier) return null;
+  return (hasOwn && Number(p.stock) > 0) || (hasSupplier && !!p.supplier.stockSupplier);
 }
 
 function setLoading(on) {
@@ -194,7 +189,7 @@ async function fetchPage() {
   hideError();
 
   try {
-    const res = await fetch(`${API_BASE}/api/v1/products/search?${params.toString()}`, {
+    const res = await fetch(`${API_BASE}/api/v1/store/products/search?${params.toString()}`, {
       headers: { 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error(`Error del servidor: HTTP ${res.status}`);
@@ -243,21 +238,19 @@ function renderCards() {
     const aplicacion  = p.application ?? p.description ?? '—';
     const marca       = p.productBrand?.name ?? '—';
     const categoria   = p.category?.name     ?? '—';
-    const supplier    = Array.isArray(p.suppliers) && p.suppliers.length > 0 ? p.suppliers[0] : null;
-    const stock       = supplier?.stockSupplier ?? null;
-    const precio      = supplier?.suggestedPrice ?? null;
-    const img         = getPrimaryImageUrl(p);
-    const hasStock    = stock !== null ? Number(stock) > 0 : null;
+    const precio      = p.supplier?.suggestedPrice ?? null;
+    const img         = getDisplayImage(p);
+    const hasStock    = getStockStatus(p);
 
     const card = document.createElement('div');
     card.className = 'tienda-card';
     card.innerHTML = `
       <div class="tienda-card-img">
-        ${img ? `<img src="${escHtml(img)}" loading="lazy" alt="${escHtml(String(aplicacion))}" onerror="this.parentElement.innerHTML='<span class=&quot;no-photo&quot;>Sin foto</span>'"/>` : '<span class="no-photo">Sin foto</span>'}
+        ${img ? `<img src="${escHtml(img)}" loading="lazy" alt="${escHtml(String(aplicacion))}" onerror="this.parentElement.innerHTML='<span class=&quot;no-photo&quot;>Sin imagen</span>'"/>` : '<span class="no-photo">Sin imagen</span>'}
       </div>
       <div class="tienda-card-body">
-        <div class="tienda-card-title" title="${escHtml(String(aplicacion))}">${escHtml(String(aplicacion))}</div>
         <div class="tienda-card-code">${escHtml(String(codigo))}</div>
+        <div class="tienda-card-title" title="${escHtml(String(aplicacion))}">${escHtml(String(aplicacion))}</div>
         <div class="tienda-card-badges">
           <span class="tienda-card-badge">${escHtml(marca)}</span>
           <span class="tienda-card-badge">${escHtml(categoria)}</span>
@@ -323,77 +316,58 @@ function buildPageRange(current, total) {
 function openDetalle(p) {
   const codigo = p.code ?? '—';
 
-  const images          = Array.isArray(p.images) ? p.images.slice() : [];
   const applications    = Array.isArray(p.applications) ? p.applications : [];
   const crossReferences = Array.isArray(p.crossReferences) ? p.crossReferences : [];
-  const suppliers       = Array.isArray(p.suppliers) ? p.suppliers : [];
   const dimensions      = p.dimensions && typeof p.dimensions === 'object' ? p.dimensions : {};
   const dimEntries      = Object.entries(dimensions).filter(([, v]) => v !== null && v !== undefined && v !== '');
 
+  const supplier    = p.supplier ?? null;
+  const img         = getDisplayImage(p);
+  const hasStock    = getStockStatus(p);
+  const aplicacion  = p.application ?? p.description ?? '';
+  const marca       = p.productBrand?.name ?? '—';
+  const rubro       = p.category?.name    ?? '—';
+
   detalleCode.textContent = codigo;
-  detalleVariantsCount.textContent = `${suppliers.length} proveedor${suppliers.length !== 1 ? 'es' : ''}`;
+  detalleVariantsCount.classList.remove('stock-yes', 'stock-no');
+  if (hasStock === null) {
+    detalleVariantsCount.textContent = '';
+  } else {
+    detalleVariantsCount.textContent = hasStock ? 'En stock' : 'Sin stock';
+    detalleVariantsCount.classList.add(hasStock ? 'stock-yes' : 'stock-no');
+  }
   detalleBody.innerHTML = '';
 
-  // ── Hero (imágenes + datos del proveedor principal) ─────────────────────────
-  const heroSupplier = suppliers.length > 0 ? suppliers[0] : null;
-  const heroProdImg   = getPrimaryImageUrl(p);
-  const heroSupImg    = heroSupplier?.imageUrl ?? '';
-  const heroAplicacion = heroSupplier?.application ?? '';
-  const heroMarca  = heroSupplier?.brand   ?? p.productBrand?.name ?? '—';
-  const heroRubro  = heroSupplier?.section ?? p.category?.name    ?? '—';
-  const heroFuente = heroSupplier?.supplierName ?? '—';
-  const heroStock  = heroSupplier?.stockSupplier ?? p.stock ?? null;
-  const heroGanancia = (heroSupplier?.suggestedPrice != null && heroSupplier?.costWithIva != null)
-    ? heroSupplier.suggestedPrice - heroSupplier.costWithIva
-    : null;
-
-  const heroSection = document.createElement('div');
-  heroSection.className = 'sadar-hero';
-  heroSection.innerHTML = `
-    <div class="sadar-hero-images">
-      ${heroProdImg ? `<img src="${escHtml(heroProdImg)}" alt="Producto ${escHtml(String(codigo))}" loading="lazy" onerror="this.style.display='none'"/>` : ''}
-      ${heroSupImg  ? `<img src="${escHtml(heroSupImg)}" alt="Proveedor ${escHtml(String(codigo))}" loading="lazy" onerror="this.style.display='none'"/>` : ''}
-      ${!heroProdImg && !heroSupImg ? '<span class="td-muted">Sin foto disponible</span>' : ''}
-    </div>
-    <div class="sadar-hero-info">
-      ${heroAplicacion ? `
+  // ── 2 columnas: toda la info a la izquierda, imagen a la derecha ────────────
+  const splitSection = document.createElement('div');
+  splitSection.className = 'tienda-modal-split';
+  splitSection.innerHTML = `
+    <div class="tienda-modal-info">
+      ${aplicacion ? `
       <div class="product-modal-header">
-        <h2 class="product-modal-name">${escHtml(heroAplicacion)}</h2>
+        <h2 class="product-modal-name">${escHtml(aplicacion)}</h2>
       </div>` : ''}
       <div class="product-modal-tags">
         <div class="product-modal-tag">
           <span class="product-modal-tag-label">Marca</span>
-          <span class="product-modal-tag-value">${escHtml(heroMarca)}</span>
+          <span class="product-modal-tag-value">${escHtml(marca)}</span>
         </div>
         <div class="product-modal-tag">
           <span class="product-modal-tag-label">Rubro</span>
-          <span class="product-modal-tag-value">${escHtml(heroRubro)}</span>
-        </div>
-        <div class="product-modal-tag">
-          <span class="product-modal-tag-label">Fuente</span>
-          <span class="product-modal-tag-value">${escHtml(heroFuente)}</span>
+          <span class="product-modal-tag-value">${escHtml(rubro)}</span>
         </div>
       </div>
-      ${heroSupplier ? `
       <div class="product-modal-metrics">
         ${[
-          { label: 'Precio Lista',    val: heroSupplier.priceList    != null ? `$${fmtPrice(heroSupplier.priceList)}`    : '—' },
-          { label: 'Costo IVA',       val: heroSupplier.costWithIva  != null ? `$${fmtPrice(heroSupplier.costWithIva)}`  : '—' },
-          { label: 'Precio Sugerido', val: heroSupplier.suggestedPrice != null ? `$${fmtPrice(heroSupplier.suggestedPrice)}` : '—', highlight: true },
-          { label: 'IVA',             val: heroSupplier.iva          != null ? fmtPercent(heroSupplier.iva)              : '—' },
-          { label: 'Descuento',       val: heroSupplier.discount     != null ? fmtPercent(heroSupplier.discount)         : '—' },
-          { label: 'Monto IVA',       val: heroSupplier.ivaAmount    != null ? `$${fmtPrice(heroSupplier.ivaAmount)}`    : '—' },
-          { label: 'Costo Neto',      val: heroSupplier.netCost      != null ? `$${fmtPrice(heroSupplier.netCost)}`      : '—' },
-          { label: 'Margen',          val: heroSupplier.margin       != null ? fmtPercent(heroSupplier.margin)           : '—' },
-          { label: 'Ganancia',        val: heroGanancia               != null ? `$${fmtPrice(heroGanancia)}`             : '—' },
-          { label: 'Stock',           val: heroStock                  != null ? escHtml(String(heroStock))               : '—' },
+          { label: 'Precio Sugerido', val: supplier?.suggestedPrice != null ? `$${fmtPrice(supplier.suggestedPrice)}` : '—', highlight: true },
+          { label: 'Disponibilidad',  val: hasStock === null ? '—' : boolBadge(hasStock, 'En stock', 'Sin stock') },
         ].map(m => `
           <div class="product-modal-metric-item${m.highlight ? ' highlight' : ''}">
             <span class="product-modal-metric-label">${m.label}</span>
             <span class="product-modal-metric-val">${m.val}</span>
           </div>
         `).join('')}
-      </div>` : ''}
+      </div>
       ${dimEntries.length > 0 ? `
       <div class="sadar-section" style="margin-top:0">
         <div class="sadar-section-label">Dimensiones</div>
@@ -417,81 +391,42 @@ function openDetalle(p) {
             </div>`).join('')}
         </div>
       </div>` : ''}
-      ${heroSupplier ? `
       <div class="sadar-section" style="margin-top:0">
-        <div class="sadar-section-label">Datos del proveedor</div>
-        <div class="sadar-dim-grid">
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Código prov.</span>
-            <span class="sadar-dim-val">${escHtml(heroSupplier.supplierProductCode ?? '—')}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Moneda</span>
-            <span class="sadar-dim-val">${escHtml(heroSupplier.currency ?? '—')}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Activo</span>
-            <span class="sadar-dim-val">${boolBadge(heroSupplier.active)}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Creado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.createdAt))}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Actualizado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.updatedAt))}</span>
-          </div>
-        </div>
-      </div>` : ''}
+        <div class="sadar-section-label">Aplicaciones (${applications.length})</div>
+        ${applications.length > 0 ? `
+        <div class="table-wrapper">
+          <table class="sadar-apps-table">
+            <thead>
+              <tr>
+                <th>Fabricante</th>
+                <th>Modelo</th>
+                <th>Posición</th>
+                <th>Lado</th>
+                <th class="th-num">Año</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${applications.map(a => {
+                const anio = a.yearOriginal ?? [a.yearFrom, a.yearTo].filter(Boolean).join('–') ?? '—';
+                return `
+                  <tr>
+                    <td>${escHtml(a.manufacturerName ?? '—')}</td>
+                    <td>${escHtml(a.modelName ?? '—')}</td>
+                    <td>${escHtml(a.position ?? '—')}</td>
+                    <td>${escHtml(a.side ?? '—')}</td>
+                    <td class="th-num">${escHtml(String(anio || '—'))}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>` : '<p class="sadar-empty">Sin aplicaciones registradas.</p>'}
+      </div>
+    </div>
+    <div class="tienda-modal-image">
+      ${img ? `<img src="${escHtml(img)}" alt="${escHtml(String(codigo))}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=&quot;no-photo&quot;>Sin imagen</span>'"/>` : '<span class="no-photo">Sin imagen</span>'}
     </div>
   `;
-  detalleBody.appendChild(heroSection);
-
-  // ── Aplicaciones ──────────────────────────────────────────────────────────
-  if (applications.length > 0) {
-    const appsSection = document.createElement('div');
-    appsSection.className = 'sadar-section';
-    appsSection.innerHTML = `
-      <div class="sadar-section-label">Aplicaciones (${applications.length})</div>
-      <div class="table-wrapper">
-        <table class="sadar-apps-table">
-          <thead>
-            <tr>
-              <th>Fabricante</th>
-              <th>Modelo</th>
-              <th>Posición</th>
-              <th>Lado</th>
-              <th class="th-num">Año</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${applications.map(a => {
-              const anio = a.yearOriginal ?? [a.yearFrom, a.yearTo].filter(Boolean).join('–') ?? '—';
-              return `
-                <tr>
-                  <td>${escHtml(a.manufacturerName ?? '—')}</td>
-                  <td>${escHtml(a.modelName ?? '—')}</td>
-                  <td>${escHtml(a.position ?? '—')}</td>
-                  <td>${escHtml(a.side ?? '—')}</td>
-                  <td class="th-num">${escHtml(String(anio || '—'))}</td>
-                  <td>${escHtml(a.description ?? '—')}</td>
-                </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-    detalleBody.appendChild(appsSection);
-  }
-
-  if (images.length === 0 && dimEntries.length === 0 && applications.length === 0 &&
-      crossReferences.length === 0 && suppliers.length === 0) {
-    const emptyMsg = document.createElement('p');
-    emptyMsg.className = 'sadar-empty';
-    emptyMsg.textContent = 'Sin información adicional disponible.';
-    detalleBody.appendChild(emptyMsg);
-  }
+  detalleBody.appendChild(splitSection);
 
   detalleOverlay.classList.add('open');
   detalleModal.classList.add('open');

@@ -2339,6 +2339,48 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   padding: 24px 0; text-align: center;
 }
 
+/* ── Tienda Web: detalle modal — layout propio de esta pantalla ──────────────
+   (no reutiliza .sadar-hero para no afectar el resto de catálogos que
+   comparten esa clase). 2 columnas: toda la info a la izquierda, imagen a
+   la derecha. */
+.tienda-detalle-modal .tienda-modal-split {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  align-items: start;
+  padding-top: 20px;
+}
+.tienda-detalle-modal .tienda-modal-info {
+  display: flex; flex-direction: column; gap: 16px;
+  min-width: 0;
+}
+.tienda-detalle-modal .product-modal-metric-item.highlight {
+  background: var(--brand-light); border-color: var(--brand);
+}
+[data-theme="dark"] .tienda-detalle-modal .product-modal-metric-item.highlight {
+  background: rgba(255,186,0,0.08); border-color: rgba(255,186,0,0.3);
+}
+.tienda-detalle-modal .product-modal-metric-item.highlight .product-modal-metric-val { color: var(--brand-text); }
+[data-theme="dark"] .tienda-detalle-modal .product-modal-metric-item.highlight .product-modal-metric-val { color: var(--brand); }
+
+.tienda-detalle-modal .tienda-modal-image {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 300px;
+  padding: 20px;
+  position: sticky; top: 0;
+}
+.tienda-detalle-modal .tienda-modal-image img {
+  max-width: 100%; max-height: 380px;
+  object-fit: contain; display: block;
+}
+@media (max-width: 760px) {
+  .tienda-detalle-modal .tienda-modal-split { grid-template-columns: 1fr; }
+  .tienda-detalle-modal .tienda-modal-image { position: static; }
+}
+
 /* Tabla SADAR — filas clickeables */
 #results-body tr { cursor: pointer; }
 #results-body tr:hover td { background: var(--surface2); }
@@ -2540,9 +2582,16 @@ tr.row-stock-local:hover > td { background: rgba(34, 197, 94, .11); }
 }
 .tienda-card-code {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--brand-text);
+  background: var(--brand-light);
+  border-radius: 5px;
+  padding: 2px 8px;
+  align-self: flex-start;
 }
+[data-theme="dark"] .tienda-card-code { color: var(--brand); background: rgba(255,186,0,0.12); }
 .tienda-card-badges {
   display: flex;
   flex-wrap: wrap;

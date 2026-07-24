@@ -1,7 +1,8 @@
 const API_BASE = window.ENV.PRODUCTOS_API;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
-const filtroTerm         = document.getElementById('filtro-term');
+const filtroManufacturerId = document.getElementById('filtro-manufacturer-id');
+const filtroModelId      = document.getElementById('filtro-model-id');
 const filtroCategoryId   = document.getElementById('filtro-category-id');
 const filtroBrandId      = document.getElementById('filtro-brand-id');
 const filtroPosition     = document.getElementById('filtro-position');
@@ -39,7 +40,17 @@ let allItems       = [];
 let totalItems     = 0;
 let currentPage    = 1;
 let pageSize       = parseInt(pageSizeSelect.value);
-let currentFilters = { term: '', categoryId: '', brandId: '', position: '', side: '', year: '' };
+let currentFilters = {
+  manufacturerId: '',
+  modelId: '',
+  modelName: '',
+  categoryId: '',
+  brandId: '',
+  position: '',
+  side: '',
+  year: '',
+};
+const manufacturersById = new Map();
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
@@ -101,10 +112,90 @@ function hideResults() {
 function hideError() { errorSection.style.display = 'none'; }
 function showError(msg) { errorMsg.textContent = msg; errorSection.style.display = ''; }
 
-// ── Filtros: carga de categorías, marcas y años ──────────────────────────────
+function resetModelOptions() {
+  filtroModelId.innerHTML = '';
+  const opt = document.createElement('option');
+  opt.value = '';
+  opt.textContent = 'Seleccioná un fabricante primero';
+  filtroModelId.appendChild(opt);
+  filtroModelId.disabled = true;
+}
+
+function populateModels(manufacturerId) {
+  if (!manufacturerId) {
+    resetModelOptions();
+    return;
+  }
+
+  const models = manufacturersById.get(String(manufacturerId)) || [];
+  filtroModelId.innerHTML = '';
+
+  if (models.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Sin modelos disponibles';
+    filtroModelId.appendChild(opt);
+    filtroModelId.disabled = true;
+    return;
+  }
+
+  const first = document.createElement('option');
+  first.value = '';
+  first.textContent = 'Todos los modelos';
+  filtroModelId.appendChild(first);
+
+  models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.name;
+    filtroModelId.appendChild(opt);
+  });
+
+  filtroModelId.disabled = false;
+}
+
+// ── Filtros: carga de fabricantes, categorías, marcas y años ─────────────────
+async function loadManufacturers() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/store/manufacturers`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    manufacturersById.clear();
+    filtroManufacturerId.querySelectorAll('option:not(:first-child)').forEach(o => o.remove());
+
+    (data.manufacturers || [])
+      .filter(m => m && m.active !== false)
+      .slice()
+      .sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'))
+      .forEach(m => {
+        const models = Array.isArray(m.models)
+          ? m.models
+              .filter(x => x && x.active !== false)
+              .map(x => ({ id: String(x.id), name: String(x.name || '') }))
+              .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+          : [];
+
+        manufacturersById.set(String(m.id), models);
+
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        filtroManufacturerId.appendChild(opt);
+      });
+
+    resetModelOptions();
+  } catch (e) {
+    console.error('Error al cargar fabricantes:', e);
+    throw e;
+  }
+}
+
 async function loadCategorias() {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/categories/?active=true`, {
+    const res = await fetch(`${API_BASE}/api/v1/store/categories`, {
       headers: { 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -127,7 +218,7 @@ async function loadCategorias() {
 
 async function loadMarcas() {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/product-brands/?active=true`, {
+    const res = await fetch(`${API_BASE}/api/v1/store/product-brands`, {
       headers: { 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -160,28 +251,32 @@ function populateYears() {
 
 // ── Fetch productos ───────────────────────────────────────────────────────────
 function runSearch() {
+  const selectedModel = filtroModelId.selectedOptions[0];
   currentFilters = {
-    term:       filtroTerm.value.trim(),
-    categoryId: filtroCategoryId.value.trim(),
-    brandId:    filtroBrandId.value.trim(),
-    position:   filtroPosition.value.trim(),
-    side:       filtroSide.value.trim(),
-    year:       filtroYear.value.trim(),
+    manufacturerId: filtroManufacturerId.value.trim(),
+    modelId:        filtroModelId.value.trim(),
+    modelName:      filtroModelId.value ? selectedModel?.textContent?.trim() || '' : '',
+    categoryId:     filtroCategoryId.value.trim(),
+    brandId:        filtroBrandId.value.trim(),
+    position:       filtroPosition.value.trim(),
+    side:           filtroSide.value.trim(),
+    year:           filtroYear.value.trim(),
   };
   currentPage = 1;
   fetchPage();
 }
 
 async function fetchPage() {
-  const { term, categoryId, brandId, position, side, year } = currentFilters;
+  const { manufacturerId, modelName, categoryId, brandId, position, side, year } = currentFilters;
   const params = new URLSearchParams();
 
-  if (term)       params.set('term', term);
-  if (categoryId) params.set('categoryId', categoryId);
-  if (brandId)    params.set('productBrandId', brandId);
-  if (position)   params.set('position', position);
-  if (side)       params.set('side', side);
-  if (year)       params.set('year', year);
+  if (modelName)       params.set('term', modelName);
+  if (categoryId)      params.set('categoryId', categoryId);
+  if (brandId)         params.set('productBrandId', brandId);
+  if (manufacturerId)  params.set('manufacturerId', manufacturerId);
+  if (position)        params.set('position', position);
+  if (side)            params.set('side', side);
+  if (year)            params.set('year', year);
   params.set('page', currentPage);
   params.set('limit', pageSize);
 
@@ -201,12 +296,13 @@ async function fetchPage() {
     resultsCount.textContent = `${totalItems} producto${totalItems !== 1 ? 's' : ''}`;
 
     const parts = [];
-    if (term)       parts.push(`"${term}"`);
-    if (categoryId) parts.push(`categoría: ${filtroCategoryId.selectedOptions[0]?.textContent ?? categoryId}`);
-    if (brandId)    parts.push(`marca: ${filtroBrandId.selectedOptions[0]?.textContent ?? brandId}`);
-    if (position)   parts.push(`posición: ${filtroPosition.selectedOptions[0]?.textContent ?? position}`);
-    if (side)       parts.push(`lado: ${filtroSide.selectedOptions[0]?.textContent ?? side}`);
-    if (year)       parts.push(`año: ${year}`);
+    if (manufacturerId) parts.push(`fabricante: ${filtroManufacturerId.selectedOptions[0]?.textContent ?? manufacturerId}`);
+    if (modelName)      parts.push(`modelo: ${modelName}`);
+    if (categoryId)     parts.push(`categoría: ${filtroCategoryId.selectedOptions[0]?.textContent ?? categoryId}`);
+    if (brandId)        parts.push(`marca: ${filtroBrandId.selectedOptions[0]?.textContent ?? brandId}`);
+    if (position)       parts.push(`posición: ${filtroPosition.selectedOptions[0]?.textContent ?? position}`);
+    if (side)           parts.push(`lado: ${filtroSide.selectedOptions[0]?.textContent ?? side}`);
+    if (year)           parts.push(`año: ${year}`);
     resultsQuery.textContent = parts.join(' · ');
 
     resultsSection.style.display = '';
@@ -446,17 +542,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetalle
 // ── Eventos de búsqueda ───────────────────────────────────────────────────────
 btnBuscar.addEventListener('click', runSearch);
 
-[filtroTerm, filtroCategoryId, filtroBrandId, filtroPosition, filtroSide, filtroYear].forEach(input => {
+filtroManufacturerId.addEventListener('change', () => {
+  populateModels(filtroManufacturerId.value);
+});
+
+[filtroManufacturerId, filtroModelId, filtroCategoryId, filtroBrandId, filtroPosition, filtroSide, filtroYear].forEach(input => {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') btnBuscar.click(); });
 });
 
 btnLimpiar.addEventListener('click', () => {
-  filtroTerm.value       = '';
-  filtroCategoryId.value = '';
-  filtroBrandId.value    = '';
-  filtroPosition.value   = '';
-  filtroSide.value       = '';
-  filtroYear.value       = '';
+  filtroManufacturerId.value = '';
+  resetModelOptions();
+  filtroCategoryId.value     = '';
+  filtroBrandId.value        = '';
+  filtroPosition.value       = '';
+  filtroSide.value           = '';
+  filtroYear.value           = '';
   allItems = [];
   totalItems = 0;
   currentPage = 1;
@@ -472,4 +573,5 @@ pageSizeSelect.addEventListener('change', () => {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 populateYears();
-maestroBoot({ loaders: [loadCategorias, loadMarcas] });
+resetModelOptions();
+maestroBoot({ loaders: [loadManufacturers, loadCategorias, loadMarcas] });

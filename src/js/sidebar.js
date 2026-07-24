@@ -22,7 +22,7 @@
     },
     {
       href: 'catalogo-nuevo.html',
-      label: 'Catálogo Nuevo',
+      label: 'Catálogo Unificado',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
         <path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -30,7 +30,7 @@
     },
     {
       href: 'catalogo-ov.html',
-      label: 'Catálogo OV',
+      label: 'Inventario OV',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
         <path d="M5 5.5h6M5 8h4M5 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -62,7 +62,7 @@
     },
     {
       href: 'catalogo-maestro.html',
-      label: 'Catálogo Maestro',
+      label: 'Productos',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M8 2l1.6 3.6L13.5 6l-2.9 2.6.8 3.9L8 10.6l-3.4 1.9.8-3.9L2.5 6l3.9-.4L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
       </svg>`,

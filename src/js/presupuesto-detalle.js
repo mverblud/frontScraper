@@ -91,6 +91,9 @@ function loadCliente() {
     return { nombre: '', telefono: '' };
   }
 }
+function saveCart(cart) {
+  try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)); } catch (_) {}
+}
 
 let items = [];      // [{ key, productId, codigo, nombre, marca, rubro, unitPrice, quantity, descPct }]
 let hasMissingIds = false;
@@ -147,6 +150,12 @@ function renderItems() {
         <input type="number" class="desc-pct-input" min="0" max="99" step="1" value="${item.descPct}"/>
       </td>
       <td class="th-num" id="row-subtotal-${idx}"><span class="price-symbol">$</span>${fmtPrice(rowNeto(item))}</td>
+      <td class="td-actions">
+        <button type="button" class="btn-icon btn-delete" title="Quitar producto" aria-label="Quitar producto">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Quitar
+        </button>
+      </td>
     `;
 
     const qtyInput = tr.querySelector('.qty-input');
@@ -165,6 +174,8 @@ function renderItems() {
     });
     descPctInput.addEventListener('blur', (e) => { e.target.value = items[idx].descPct; });
 
+    tr.querySelector('.btn-delete').addEventListener('click', () => removeItem(idx));
+
     itemsBody.appendChild(tr);
   });
 }
@@ -177,6 +188,28 @@ function updateRowSubtotal(idx) {
 function recomputeTotals() {
   subtotalEl.textContent = `$${fmtPrice(getSubtotal())}`;
   totalEl.textContent = `$${fmtPrice(getTotal())}`;
+}
+
+function removeItem(idx) {
+  const { key } = items[idx];
+  const cart = loadCart();
+  delete cart[key];
+  saveCart(cart);
+
+  items.splice(idx, 1);
+
+  if (items.length === 0) {
+    emptyState.style.display = '';
+    detalleContent.style.display = 'none';
+    return;
+  }
+
+  hasMissingIds = items.some(i => i.productId == null);
+  missingIdWarning.style.display = hasMissingIds ? '' : 'none';
+
+  renderItems();
+  recomputeTotals();
+  setGenerating(false);
 }
 
 // ── Estado inicial de la pantalla ───────────────────────────────────────────────
@@ -295,18 +328,23 @@ btnGenerar.addEventListener('click', async () => {
       body: JSON.stringify(buildPayload())
     });
 
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+
     if (!res.ok) {
       let msg = `No se pudo generar el presupuesto (HTTP ${res.status}).`;
-      try {
-        const data = await res.json();
-        if (data && data.message) msg = Array.isArray(data.message) ? data.message.join(' · ') : String(data.message);
-      } catch (_) {}
+      if (data && data.message) msg = Array.isArray(data.message) ? data.message.join(' · ') : String(data.message);
       throw new Error(msg);
     }
+
+    const quoteId = data?.id ?? data?._id ?? data?.quoteId ?? data?.number ?? data?.data?.id ?? null;
+    const prevTitle = document.title;
+    if (quoteId != null) document.title = `presupuesto-${quoteId}`;
 
     fillPrintMirror();
     setTimeout(() => {
       window.print();
+      document.title = prevTitle;
       try {
         localStorage.removeItem(CART_STORAGE_KEY);
         localStorage.removeItem(CLIENTE_STORAGE_KEY);

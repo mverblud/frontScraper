@@ -1774,6 +1774,20 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   background: var(--red); animation: none;
 }
 
+/* ═══ WAKE BADGES — acceso directo a los servicios de Render (free tier) ═══ */
+.wake-group { display: flex; align-items: center; gap: 6px; }
+
+.wake-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem; font-weight: 600; color: var(--brand);
+  background: rgba(255, 186, 0, .12); border: 1px solid var(--brand);
+  border-radius: 20px; padding: 4px 12px; text-decoration: none;
+  transition: opacity 0.15s;
+}
+.wake-badge:hover { opacity: 0.8; }
+.wake-badge svg { display: block; }
+
 /* ═══ HOME — MENU GRID ═══════════════════════════════════════ */
 .menu-grid {
   display: grid;

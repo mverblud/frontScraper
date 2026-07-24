@@ -24,6 +24,7 @@
 
   var TOKEN_KEY = 'ov_auth_token';
   var EXP_KEY   = 'ov_auth_exp';
+  var USER_KEY  = 'ov_auth_user';
 
   // ── JWT decode ────────────────────────────────────────────────────────────
 
@@ -42,18 +43,36 @@
 
   // ── Gestión de sesión ─────────────────────────────────────────────────────
 
-  function setSession(token) {
+  function setSession(token, user) {
     localStorage.setItem(TOKEN_KEY, token);
     var payload = decodePayload(token);
     var exp = (payload && payload.exp)
       ? payload.exp * 1000
       : Date.now() + 60 * 60 * 1000; // fallback 1h
     localStorage.setItem(EXP_KEY, String(exp));
+
+    if (user && typeof user === 'object') {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_KEY);
+    }
   }
 
   function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(EXP_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  function getStoredUser() {
+    var raw = localStorage.getItem(USER_KEY);
+    if (!raw) return null;
+    try {
+      var parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === 'object') ? parsed : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   function getToken() {
@@ -71,11 +90,36 @@
     return !!getToken();
   }
 
-  function getUsername() {
+  function getUser() {
+    var stored = getStoredUser();
+    if (stored) return stored;
+
     var token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return '';
-    var payload = decodePayload(token);
-    return (payload && payload.sub) ? String(payload.sub) : '';
+    if (!token) return null;
+
+    var payload = decodePayload(token) || {};
+    return {
+      id: payload.sub || null,
+      email: payload.email || '',
+      fullName: '',
+      roles: Array.isArray(payload.roles) ? payload.roles : [],
+    };
+  }
+
+  function getUsername() {
+    var user = getUser();
+    if (!user) return '';
+
+    if (user.fullName) return String(user.fullName);
+    if (user.email) return String(user.email);
+    if (user.id !== null && user.id !== undefined) return String(user.id);
+    return '';
+  }
+
+  function getUserRole() {
+    var user = getUser();
+    if (!user || !Array.isArray(user.roles) || user.roles.length === 0) return '';
+    return String(user.roles[0] || '').trim();
   }
 
   function logout(redirect) {
@@ -134,8 +178,10 @@
   window.auth = {
     setSession:      setSession,
     getToken:        getToken,
+    getUser:         getUser,
     isAuthenticated: isAuthenticated,
     getUsername:     getUsername,
+    getUserRole:     getUserRole,
     logout:          logout,
     requireAuth:     requireAuth,
   };

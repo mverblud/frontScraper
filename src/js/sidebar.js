@@ -24,47 +24,58 @@
       href: 'catalogo-nuevo.html',
       label: 'Catálogo Unificado',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="2" y="3" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="8.5" y="7.5" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M7.5 6h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M8 6.5v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
     {
       href: 'catalogo-ov.html',
       label: 'Inventario OV',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M5 5.5h6M5 8h4M5 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="2.5" y="2.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="8.5" y="2.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="2.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8.5 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M8.5 13h3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
     {
       href: 'index.html',
       label: 'Catálogo RM',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M5 5.5h6M5 8h6M5 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <ellipse cx="8" cy="3.5" rx="4.5" ry="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3.5 3.5v6c0 1.1 2 2 4.5 2s4.5-.9 4.5-2v-6" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M3.5 6.5c0 1.1 2 2 4.5 2s4.5-.9 4.5-2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10.2 12.2l3.1 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
     {
       href: 'catalogo-asm.html',
       label: 'Catálogo ASM',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M5 5.5h6M5 8h6M5 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6.2 5.9l2.1 2.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.8 8.1l2.4-2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
     {
       href: 'catalogo-sadar.html',
       label: 'Catálogo SADAR',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M4 5.5h5M4 8h8M4 10.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="2" y="4.5" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4 6v1.4M6 6v2.2M8 6v1.4M10 6v2.2M12 6v1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
       </svg>`,
     },
     {
       href: 'catalogo-maestro.html',
       label: 'Productos',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M8 2l1.6 3.6L13.5 6l-2.9 2.6.8 3.9L8 10.6l-3.4 1.9.8-3.9L2.5 6l3.9-.4L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8 2l5 2.8v6.4L8 14 3 11.2V4.8L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M3 4.8L8 7.6l5-2.8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8 7.6V14" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
       </svg>`,
     },
     {
@@ -80,9 +91,9 @@
       href: 'presupuestos.html',
       label: 'Cotizador',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="3" y="2.5" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M6 1.5h4a1 1 0 011 1v1H5v-1a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M5.5 7h5M5.5 9.5h5M5.5 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5.5 4.8h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.5 8h1.6M8.2 8h1.6M10.9 8h.1M5.5 10.6h1.6M8.2 10.6h1.6M10.9 10.6h.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
     {
@@ -91,10 +102,30 @@
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M4 2h6l3 3v9a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
         <path d="M10 2v3h3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M5 8.5h6M5 11h6M5 6h2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5 8.5l1.2 1.2L8.8 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9.6 8h1.8M9.6 10.4h1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
   ];
+
+  function normalizeRoleLabel(role) {
+    const value = String(role || '').toLowerCase();
+    if (!value) return 'Usuario';
+    if (value === 'admin' || value === 'administrator') return 'Administrador';
+    if (value === 'user') return 'Usuario';
+    if (value === 'seller' || value === 'vendedor') return 'Vendedor';
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+
+  function getAvatarText(name) {
+    const clean = String(name || '').trim();
+    if (!clean) return 'OV';
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return clean.slice(0, 2).toUpperCase();
+  }
 
   // ── Detectar ítem activo ────────────────────────────────────────────────────
 
@@ -114,8 +145,10 @@
       </a>`;
     }).join('\n');
 
-    const username = (window.auth && window.auth.getUsername()) || 'OV';
-    const avatar = username.slice(0, 2).toUpperCase();
+    const username = (window.auth && window.auth.getUsername && window.auth.getUsername()) || 'OV';
+    const role = (window.auth && window.auth.getUserRole && window.auth.getUserRole()) || '';
+    const roleLabel = normalizeRoleLabel(role);
+    const avatar = getAvatarText(username);
 
     return `<aside class="sidebar" id="sidebar">
   <a class="sidebar-logo" href="home.html">
@@ -138,7 +171,7 @@
       <div class="user-avatar">${avatar}</div>
       <div class="user-details">
         <span class="user-name">${username}</span>
-        <span class="user-role">Administrador</span>
+        <span class="user-role">${roleLabel}</span>
       </div>
       <button class="sidebar-logout-btn" id="sidebar-logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

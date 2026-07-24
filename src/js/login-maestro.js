@@ -87,12 +87,17 @@
                 data.access_token ||
                 (data.data && data.data.token)
               );
+              var user = data && (
+                data.user ||
+                data.profile ||
+                (data.data && (data.data.user || data.data.profile))
+              );
               if (!token) {
                 showError('Respuesta inesperada del servidor. Intentá de nuevo.');
                 setLoading(false);
                 return;
               }
-              window.authMaestro.setSession(token);
+              window.authMaestro.setSession(token, user);
               window.location.replace('home.html');
             });
           } else if (res.status === 401) {

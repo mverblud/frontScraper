@@ -2,9 +2,8 @@ const API_BASE = window.ENV.PRODUCTOS_API;
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 25;
+const HISTORY_TIME_ZONE = 'America/Argentina/Buenos_Aires';
 
-const refreshBtn    = document.getElementById('refresh-history-btn');
-const loader        = document.getElementById('loader');
 const runSpinner    = document.getElementById('run-spinner');
 const errorSection  = document.getElementById('error-section');
 const errorMsg      = document.getElementById('error-msg');
@@ -23,6 +22,7 @@ let totalPages = null;
 let totalItems = null;
 let lastBatchCount = 0;
 let loading = false;
+let expandedBatchKey = null;
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -52,6 +52,26 @@ function fmtPrice(val) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function fmtPriceCell(val) {
+  if (val === null || val === undefined) return '<span class="td-muted">—</span>';
+  return `<span class="price-symbol">$</span>${fmtPrice(val)}`;
+}
+
+function fmtDateTime(val) {
+  if (!val) return '—';
+  const date = new Date(val);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: HISTORY_TIME_ZONE,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
 }
 
 function toPositiveInt(value) {
@@ -178,11 +198,8 @@ function showEmptyState(msg) {
 
 function setLoading(on) {
   loading = on;
-  refreshBtn.disabled = on;
   prevBtn.disabled = on || prevBtn.disabled;
   nextBtn.disabled = on || nextBtn.disabled;
-  loader.style.display = on ? 'inline-flex' : 'none';
-  refreshBtn.querySelector('.btn-text').textContent = on ? 'Actualizando…' : 'Actualizar historial';
   runSpinner.style.display = on ? '' : 'none';
 }
 
@@ -213,83 +230,127 @@ function priceCell(oldVal, newVal) {
   `;
 }
 
-function buildBatchCard(batch) {
+function batchChangeBadge(batch) {
+  if (batch.needsMassUpdate) {
+    return `<span class="stock-badge stock-no">Requiere actualización (${escHtml(String(batch.changedCount ?? 0))}/${escHtml(String(batch.threshold ?? '—'))})</span>`;
+  }
+  if (Number(batch.changedCount) > 0) {
+    return `<span class="stock-badge stock-proveedor">${escHtml(String(batch.changedCount))} cambio${Number(batch.changedCount) !== 1 ? 's' : ''}</span>`;
+  }
+  return '<span class="stock-badge stock-yes">Sin cambios</span>';
+}
+
+function getBatchKey(batch, index) {
+  return String(
+    batch.id
+    ?? batch.batchId
+    ?? batch.checkId
+    ?? batch.createdAt
+    ?? batch.updatedAt
+    ?? `${batch.productBrandName ?? 'batch'}|${batch.supplierName ?? 'supplier'}|${index}`,
+  );
+}
+
+function buildBatchDetailHtml(batch) {
   const items = Array.isArray(batch.items) ? batch.items : [];
 
-  const card = document.createElement('div');
-  card.className = 'card';
-
-  const header = document.createElement('div');
-  header.className = 'card-header';
-  header.style.cursor = 'pointer';
-  header.innerHTML = `
-    <div class="card-title">
-      <svg class="row-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L7 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      ${escHtml(batch.productBrandName ?? '—')}
-    </div>
-    <div class="card-meta">
-      <span class="td-muted">${escHtml(batch.supplierName ?? '—')}</span>
-      <span class="td-muted">· muestra: ${escHtml(String(batch.sampleSize ?? items.length))}</span>
-      ${batchStatusBadge(batch)}
-    </div>
-  `;
-
-  const body = document.createElement('div');
-  body.className = 'table-wrapper';
-  body.style.display = 'none';
-  body.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th class="th-center">Estado</th>
-          <th class="th-num">Precio Lista</th>
-          <th class="th-num">Costo Neto</th>
-          <th class="th-num">Costo c/IVA</th>
-          <th class="th-num">Precio Sugerido</th>
+  const rows = items.length > 0
+    ? items.map((item) => `
+        <tr${item.changed ? ' class="history-item-changed"' : ''}>
+          <td><span class="td-code">${escHtml(item.supplierProductCode ?? '—')}</span></td>
+          <td class="th-num">${fmtPriceCell(item.priceListOld)}</td>
+          <td class="th-num">${fmtPriceCell(item.priceListNew)}</td>
+          <td class="th-num">${fmtPriceCell(item.suggestedPriceOld)}</td>
+          <td class="th-num">${fmtPriceCell(item.suggestedPriceNew)}</td>
+          <td class="th-center">${item.changed ? '<span class="stock-badge stock-proveedor">Sí</span>' : '<span class="stock-badge stock-yes">No</span>'}</td>
+          <td class="th-center">${item.scrapeStatus === 'OK'
+            ? '<span class="stock-badge stock-yes">OK</span>'
+            : `<span class="stock-badge stock-no">${escHtml(item.scrapeStatus ?? 'ERROR')}</span>`}</td>
         </tr>
-      </thead>
-      <tbody>
-        ${items.map((item) => `
-          <tr${item.changed ? ' style="background:var(--surface2)"' : ''}>
-            <td><span class="td-code">${escHtml(item.supplierProductCode ?? '—')}</span></td>
-            <td class="th-center">${item.scrapeStatus === 'OK'
-              ? '<span class="stock-badge stock-yes">OK</span>'
-              : `<span class="stock-badge stock-no">${escHtml(item.scrapeStatus ?? 'ERROR')}</span>`}</td>
-            <td class="th-num">${priceCell(item.priceListOld, item.priceListNew)}</td>
-            <td class="th-num">${priceCell(item.netCostOld, item.netCostNew)}</td>
-            <td class="th-num">${priceCell(item.costWithIvaOld, item.costWithIvaNew)}</td>
-            <td class="th-num">${priceCell(item.suggestedPriceOld, item.suggestedPriceNew)}</td>
+      `).join('')
+    : `
+      <tr>
+        <td colspan="7" class="td-muted history-empty-items">Este batch no tiene items para mostrar.</td>
+      </tr>
+    `;
+
+  return `
+    <div class="history-detail">
+      <div class="history-detail-meta">
+        <span class="td-muted">${escHtml(String(items.length))} ítem${items.length !== 1 ? 'es' : ''}</span>
+        <span class="td-muted">· muestra: ${escHtml(String(batch.sampleSize ?? items.length))}</span>
+      </div>
+      <table class="history-detail-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th class="th-num">Precio lista anterior</th>
+            <th class="th-num">Precio lista nuevo</th>
+            <th class="th-num">Precio sugerido anterior</th>
+            <th class="th-num">Precio sugerido nuevo</th>
+            <th class="th-center">Cambiado</th>
+            <th class="th-center">Estado de búsqueda</th>
           </tr>
-        `).join('')}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function toggleBatchDetail(batch, row, batchKey) {
+  const openRow = resultsEl.querySelector('tr.history-detail-row');
+  const openBatchRow = resultsEl.querySelector('tr.history-batch-row.expanded');
+
+  if (openRow) openRow.remove();
+  if (openBatchRow) openBatchRow.classList.remove('expanded');
+
+  const wasExpanded = expandedBatchKey === batchKey;
+  expandedBatchKey = wasExpanded ? null : batchKey;
+  if (wasExpanded) return;
+
+  row.classList.add('expanded');
+  const detailRow = document.createElement('tr');
+  detailRow.className = 'history-detail-row';
+  detailRow.innerHTML = `<td colspan="7">${buildBatchDetailHtml(batch)}</td>`;
+  row.insertAdjacentElement('afterend', detailRow);
+}
+
+function buildBatchRow(batch, index) {
+  const items = Array.isArray(batch.items) ? batch.items : [];
+  const batchKey = getBatchKey(batch, index);
+
+  const tr = document.createElement('tr');
+  tr.className = 'history-batch-row';
+  tr.dataset.batchKey = batchKey;
+  tr.innerHTML = `
+    <td class="history-row-chevron-cell th-center">
+      <svg class="row-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L7 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </td>
+    <td class="th-center">${escHtml(fmtDateTime(batch.createdAt))}</td>
+    <td>${escHtml(batch.supplierName ?? '—')}</td>
+    <td>${escHtml(batch.productBrandName ?? '—')}</td>
+    <td class="th-center">${escHtml(String(batch.sampleSize ?? items.length))}</td>
+    <td class="th-center">${batchChangeBadge(batch)}</td>
+    <td class="th-center">${batchStatusBadge(batch)}</td>
   `;
 
-  header.addEventListener('click', () => {
-    const expanded = body.style.display !== 'none';
-    body.style.display = expanded ? 'none' : '';
-    const chevron = header.querySelector('.row-chevron');
-    chevron.style.transform = expanded ? '' : 'rotate(90deg)';
-    chevron.style.color = expanded ? '' : 'var(--brand)';
-  });
-
-  card.appendChild(header);
-  card.appendChild(body);
-  return card;
+  tr.addEventListener('click', () => toggleBatchDetail(batch, tr, batchKey));
+  return tr;
 }
 
 function renderBatches(batches) {
   resultsEl.innerHTML = '';
-
+  expandedBatchKey = null;
   if (batches.length === 0) {
     historyFooter.style.display = 'none';
     showEmptyState('No hay resultados para la página seleccionada.');
     return;
   }
 
-  batches.forEach((batch) => {
-    resultsEl.appendChild(buildBatchCard(batch));
+  batches.forEach((batch, index) => {
+    const row = buildBatchRow(batch, index);
+    resultsEl.appendChild(row);
   });
 }
 
@@ -351,10 +412,6 @@ async function fetchHistory(pageToLoad) {
     updatePaginationUI();
   }
 }
-
-refreshBtn.addEventListener('click', () => {
-  fetchHistory(currentPage);
-});
 
 prevBtn.addEventListener('click', () => {
   if (!canGoPrev()) return;

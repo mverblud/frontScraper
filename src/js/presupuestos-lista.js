@@ -32,13 +32,25 @@ function fmtDate(val) {
   if (!val) return '—';
   const d = new Date(val);
   if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+  return d.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
 }
 function fmtDateShort(val) {
   if (!val) return '—';
   const d = new Date(val);
   if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return d.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
 }
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
@@ -132,13 +144,8 @@ function renderRows(quotes) {
       <td class="quote-row-chevron">
         <svg class="row-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L7 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </td>
-      <td class="th-center">
-        <button type="button" class="btn-detail btn-print-row" title="Generar PDF" aria-label="Generar PDF">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="1" width="8" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M3 6H2a1 1 0 00-1 1v4h2v-2h8v2h2V7a1 1 0 00-1-1h-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="3" y="8" width="8" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
-        </button>
-      </td>
       <td>${escHtml(q.id)}</td>
-      <td>${fmtDateShort(q.createdAt)}</td>
+      <td>${fmtDate(q.createdAt)}</td>
       <td>${fmtDateShort(q.expiresAt)}</td>
       <td>${escHtml(q.customerName || '—')}</td>
       <td>${escHtml(q.customerPhone || '—')}</td>
@@ -147,6 +154,11 @@ function renderRows(quotes) {
       <td class="th-num">${descuentoStr}</td>
       <td class="th-num"><span class="price-symbol">$</span>${fmtPrice(q.total)}</td>
       <td class="td-notas" title="${notas}">${notas}</td>
+      <td class="th-center">
+        <button type="button" class="btn-detail btn-print-row" title="Generar PDF" aria-label="Generar PDF">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="1" width="8" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M3 6H2a1 1 0 00-1 1v4h2v-2h8v2h2V7a1 1 0 00-1-1h-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="3" y="8" width="8" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+      </td>
     `;
 
     tr.querySelector('.btn-print-row').addEventListener('click', (e) => {
@@ -192,8 +204,8 @@ function buildDetalleHtml(quote) {
     <div class="quote-detalle">
       <table class="quote-detalle-items">
         <colgroup>
-          <col style="width:14%"><col style="width:38%"><col style="width:8%">
-          <col style="width:14%"><col style="width:10%"><col style="width:16%">
+          <col style="width:12%"><col style="width:46%"><col style="width:8%">
+          <col style="width:12%"><col style="width:8%"><col style="width:14%">
         </colgroup>
         <thead>
           <tr>
@@ -223,7 +235,15 @@ function fillPrintMirror(quote) {
   const items = Array.isArray(quote.items) ? quote.items : [];
   const now = new Date();
 
-  document.getElementById('print-date').textContent = `Fecha: ${now.toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+  document.getElementById('print-date').textContent = `Fecha: ${now.toLocaleString('es-AR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })}`;
   document.getElementById('print-items-count').textContent = `· ${items.length} producto${items.length !== 1 ? 's' : ''}`;
   document.getElementById('print-cliente-nombre').textContent = quote.customerName || '';
   document.getElementById('print-cliente-tel').textContent    = quote.customerPhone || '';

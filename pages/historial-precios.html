@@ -65,15 +65,6 @@
           <p style="margin:0 0 16px;font-size:0.83rem;color:var(--text-secondary)">
             Esta vista consulta el historial de checks guardados. La lista se carga paginada desde el servidor.
           </p>
-          <div class="actions">
-            <button id="refresh-history-btn" class="btn-primary">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5a5.5 5.5 0 019.9-3.3M13 7.5a5.5 5.5 0 01-9.9 3.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M11.3 2.6v2.3h-2.3M3.7 12.4v-2.3H6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span class="btn-text">Actualizar historial</span>
-              <span class="btn-loader" id="loader" style="display:none">
-                <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5" stroke-dasharray="25 25" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="0.7s" repeatCount="indefinite"/></circle></svg>
-              </span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -93,7 +84,22 @@
         <p class="no-results-sub" id="empty-state-sub">Todavía no hay registros de historial para mostrar.</p>
       </div>
 
-      <div id="results" style="display:flex;flex-direction:column;gap:16px"></div>
+      <div class="table-wrapper" id="results-wrap">
+        <table id="results-table" class="history-table">
+          <thead>
+            <tr>
+              <th class="th-center"></th>
+              <th class="th-center">Fecha</th>
+              <th>Proveedor</th>
+              <th>Marca</th>
+              <th class="th-center">Muestra</th>
+              <th class="th-center">Cambios</th>
+              <th class="th-center">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="results"></tbody>
+        </table>
+      </div>
 
       <div class="table-footer" id="history-footer" style="display:none">
         <div class="pagination-info" id="history-page-info">Página 1</div>

@@ -204,6 +204,11 @@ function setLoading(on) {
 }
 
 function batchStatusBadge(batch) {
+  const items = Array.isArray(batch.items) ? batch.items : [];
+  const errorCount = items.filter((item) => item.scrapeStatus && item.scrapeStatus !== 'OK').length;
+  if (errorCount > 0) {
+    return `<span class="stock-badge stock-no">Con errores (${errorCount}/${items.length})</span>`;
+  }
   if (batch.needsMassUpdate) {
     return `<span class="stock-badge stock-no">Requiere actualización (${batch.changedCount}/${batch.threshold})</span>`;
   }

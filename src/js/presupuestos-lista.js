@@ -42,6 +42,9 @@ function fmtDate(val) {
     hour12: false
   });
 }
+function getItemAplicacion(it) {
+  return it.productId != null ? (it.productApplication || '—') : (it.productDescription || '—');
+}
 function fmtDateShort(val) {
   if (!val) return '—';
   const d = new Date(val);
@@ -192,7 +195,7 @@ function buildDetalleHtml(quote) {
   const rows = items.map(it => `
     <tr>
       <td><span class="td-code">${escHtml(it.productCode)}</span></td>
-      <td>${it.productApplication ? escHtml(it.productApplication) : '—'}</td>
+      <td>${escHtml(getItemAplicacion(it))}</td>
       <td class="th-center">${escHtml(it.quantity)}</td>
       <td class="th-num"><span class="price-symbol">$</span>${fmtPrice(it.unitPrice)}</td>
       <td class="th-center">${it.discountValue ? fmtPercent(it.discountValue) : '—'}</td>
@@ -258,7 +261,7 @@ function fillPrintMirror(quote) {
     div.innerHTML = `
       <div class="cart-item-info">
         <span class="cart-item-code">${escHtml(it.productCode)}</span>
-        <div class="cart-item-desc">${it.productApplication ? escHtml(it.productApplication) : '—'}</div>
+        <div class="cart-item-desc">${escHtml(getItemAplicacion(it))}</div>
       </div>
       <div class="cart-item-controls">
         <span class="cart-item-qty-print print-only">${it.quantity}</span>

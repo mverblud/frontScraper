@@ -1,5 +1,6 @@
 const API_BASE = window.ENV.PRODUCTOS_BFF;
 const CART_STORAGE_KEY    = 'ov_presupuesto';
+const CLIENTE_STORAGE_KEY = 'ov_presupuesto_cliente';
 const HIDDEN_COLS_KEY     = 'ov_nv_hidden_cols_v2';
 const DEFAULT_HIDDEN_COLS = ['iva-pct', 'iva-monto', 'desc-pct', 'margen'];
 
@@ -1250,31 +1251,17 @@ function closeDrawer() {
   document.body.style.overflow = '';
 }
 
-// ── Imprimir ───────────────────────────────────────────────────
+// ── Ver presupuesto (navega a la pantalla de detalle/generación) ───────────────
 btnImprimir.addEventListener('click', () => {
-  const printDate = document.getElementById('print-date');
-  if (printDate) {
-    const now = new Date();
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    printDate.textContent = `Fecha: ${now.toLocaleDateString('es-AR', options)}`;
-  }
-  const printItemsCount = document.getElementById('print-items-count');
-  if (printItemsCount) {
-    const entries = Object.entries(cart);
-    const count = entries.reduce((s, [, i]) => s + i.qty, 0);
-    printItemsCount.textContent = `· ${count} producto${count !== 1 ? 's' : ''}`;
-  }
-  // Poblar campos de cliente en los spans print-only
   const nombreInput = document.getElementById('cliente-nombre');
-  const nombrePrint = document.getElementById('cliente-nombre-print');
-  if (nombrePrint) nombrePrint.textContent = nombreInput ? nombreInput.value.trim() : '';
-
-  const telInput = document.getElementById('cliente-tel');
-  const telPrint = document.getElementById('cliente-tel-print');
-  if (telPrint) telPrint.textContent = telInput ? telInput.value.trim() : '';
-
-  openDrawer();
-  setTimeout(() => window.print(), 100);
+  const telInput    = document.getElementById('cliente-tel');
+  try {
+    localStorage.setItem(CLIENTE_STORAGE_KEY, JSON.stringify({
+      nombre:   nombreInput ? nombreInput.value.trim() : '',
+      telefono: telInput    ? telInput.value.trim()    : ''
+    }));
+  } catch (_) {}
+  window.location.href = 'presupuesto-detalle.html';
 });
 
 // ── Helpers ───────────────────────────────────────────────────

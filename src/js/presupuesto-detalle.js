@@ -96,7 +96,6 @@ function saveCart(cart) {
 }
 
 let items = [];      // [{ key, productId, codigo, nombre, marca, rubro, unitPrice, quantity, descPct }]
-let hasMissingIds = false;
 
 function initItems() {
   const cart = loadCart();
@@ -111,7 +110,6 @@ function initItems() {
     quantity:  qty,
     descPct:   0
   }));
-  hasMissingIds = items.some(i => i.productId == null);
 }
 
 // ── Cálculo ───────────────────────────────────────────────────────────────────
@@ -135,10 +133,9 @@ function renderItems() {
   itemsBody.innerHTML = '';
   items.forEach((item, idx) => {
     const tr = document.createElement('tr');
-    if (item.productId == null) tr.classList.add('row-invalid-id');
 
     tr.innerHTML = `
-      <td><span class="td-code">${escHtml(String(item.codigo))}</span>${item.productId == null ? '<span class="invalid-id-badge">Sin ID</span>' : ''}</td>
+      <td><span class="td-code">${escHtml(String(item.codigo))}</span></td>
       <td>${escHtml(String(item.nombre))}</td>
       <td class="td-marca"><span>${escHtml(String(item.marca))}</span></td>
       <td class="td-rubro"><span>${escHtml(String(item.rubro))}</span></td>
@@ -204,9 +201,6 @@ function removeItem(idx) {
     return;
   }
 
-  hasMissingIds = items.some(i => i.productId == null);
-  missingIdWarning.style.display = hasMissingIds ? '' : 'none';
-
   renderItems();
   recomputeTotals();
   setGenerating(false);
@@ -233,31 +227,30 @@ function init() {
   renderItems();
   recomputeTotals();
 
-  if (hasMissingIds) {
-    missingIdWarning.style.display = '';
-    btnGenerar.disabled = true;
-  }
-
   descTotalInput.addEventListener('input', recomputeTotals);
   descTotalInput.addEventListener('blur', () => { descTotalInput.value = getTotalDescPct(); });
 }
 
 // ── Generar presupuesto (POST + imprimir) ──────────────────────────────────────
 function setGenerating(on) {
-  btnGenerar.disabled = on || hasMissingIds;
+  btnGenerar.disabled = on;
   btnGenerar.querySelector('.btn-text').textContent = on ? 'Generando…' : 'Generar';
 }
 
 function buildPayload() {
   const totalDescPct = getTotalDescPct();
   return {
-    items: items.map(i => ({
-      productId: i.productId,
-      quantity: i.quantity,
-      unitPrice: i.unitPrice,
-      discountType: i.descPct > 0 ? 'PERCENTAGE' : null,
-      discountValue: i.descPct > 0 ? i.descPct : null
-    })),
+    items: items.map(i => {
+      const base = {
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        discountType: i.descPct > 0 ? 'PERCENTAGE' : null,
+        discountValue: i.descPct > 0 ? i.descPct : null
+      };
+      return i.productId != null
+        ? { productId: i.productId, ...base }
+        : { productCode: i.codigo, productDescription: i.nombre, ...base };
+    }),
     customerName:  clienteNombreInput.value.trim(),
     customerPhone: clienteTelInput.value.trim(),
     notes:         notasInput.value.trim(),
@@ -311,7 +304,7 @@ function fillPrintMirror() {
 }
 
 btnGenerar.addEventListener('click', async () => {
-  if (items.length === 0 || hasMissingIds) return;
+  if (items.length === 0) return;
 
   const confirmed = confirm(
     '¿Confirmás la generación del presupuesto?\n\nSe va a generar un PDF y, una vez generado, no vas a poder hacer cambios.'

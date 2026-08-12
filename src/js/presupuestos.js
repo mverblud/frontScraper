@@ -10,9 +10,15 @@ const DEFAULT_HIDDEN_COLS = ['iva-pct', 'iva-monto', 'desc-pct', 'margen', 'fuen
 const filtroTerm         = document.getElementById('filtro-term');
 const filtroCategoryId   = document.getElementById('filtro-category-id');
 const filtroBrandId      = document.getElementById('filtro-brand-id');
+const filtroManufacturerId = document.getElementById('filtro-manufacturer-id');
 const filtroPosition     = document.getElementById('filtro-position');
 const filtroSide         = document.getElementById('filtro-side');
 const filtroYear         = document.getElementById('filtro-year');
+const filtroActive       = document.getElementById('filtro-active');
+const filtroInStock      = document.getElementById('filtro-in-stock');
+const filtroStockSupplier = document.getElementById('filtro-stock-supplier');
+const filtroFeatured     = document.getElementById('filtro-featured');
+const filtroWebEnabled   = document.getElementById('filtro-web-enabled');
 const btnBuscar          = document.getElementById('btn-buscar');
 const btnLimpiar         = document.getElementById('btn-limpiar');
 const loader             = document.getElementById('loader');
@@ -72,6 +78,11 @@ const COLUMNS = [
     sortValue: p => String(p.marca ?? '')
   },
   {
+    key: 'fabricante', label: 'Fabricante', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.fabricante ?? '')
+  },
+  {
     key: 'rubro', label: 'Rubro', align: 'left',
     sortable: true, hideable: true,
     sortValue: p => String(p.rubro ?? '')
@@ -85,6 +96,21 @@ const COLUMNS = [
     key: 'fuente', label: 'Fuente', align: 'center',
     sortable: true, hideable: true,
     sortValue: p => getSourceKey(p)
+  },
+  {
+    key: 'activo', label: 'Activo', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => p.active === true ? 1 : (p.active === false ? 0 : -1)
+  },
+  {
+    key: 'web', label: 'Web', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => p.webEnabled === true ? 1 : (p.webEnabled === false ? 0 : -1)
+  },
+  {
+    key: 'destacado', label: 'Destacado', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => p.featured === true ? 1 : (p.featured === false ? 0 : -1)
   },
   {
     key: 'precio-lista', label: 'Precio lista', align: 'num',
@@ -146,6 +172,11 @@ const COLUMNS = [
     }
   },
   {
+    key: 'stock-proveedor', label: 'Stock prov.', align: 'center',
+    sortable: true, hideable: true,
+    sortValue: p => p.stockProveedor ?? null
+  },
+  {
     key: 'agregar', label: 'Agregar', align: 'center',
     sortable: false, hideable: false
   }
@@ -159,7 +190,7 @@ let allProducts     = [];  // productos adaptados a shape plano, TODA la búsque
 let totalItems      = 0;
 let currentPage      = 1;
 let pageSize         = parseInt(pageSizeSelect.value);
-let currentFilters   = { term: '', categoryId: '', brandId: '', position: '', side: '', year: '' };
+let currentFilters   = { term: '', categoryId: '', brandId: '', manufacturerId: '', position: '', side: '', year: '', active: 'true', inStock: '', stockSupplier: '', featured: '', webEnabled: '' };
 let filterAplicacion = ''; // filtro de texto client-side sobre la columna Aplicación
 
 let sortKey = 'marca';
@@ -210,6 +241,11 @@ function fmtDate(val) {
   const d = new Date(val);
   if (isNaN(d.getTime())) return '—';
   return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+function boolBadge(val, trueLabel = 'Sí', falseLabel = 'No') {
+  if (val === null || val === undefined) return '<span class="td-muted">—</span>';
+  const isTrue = !!val;
+  return `<span class="stock-badge ${isTrue ? 'stock-yes' : 'stock-no'}">${isTrue ? trueLabel : falseLabel}</span>`;
 }
 // Badge de stock combinado: prioriza el stock propio (local OV) sobre el del proveedor.
 function stockBadge(p) {
@@ -295,12 +331,22 @@ function adaptProduct(p) {
   // Posición en estantería del local (ej. "A1"), solo relevante cuando hay stock propio.
   const ubicacion = (p.ubication ?? '').toString().trim() || null;
 
+  // Fabricantes de vehículo cuyas aplicaciones coinciden con este producto (puede
+  // aplicar a varios: ej. un amortiguador que sirve para Fiat y Peugeot).
+  const fabricantes = Array.isArray(p.applications)
+    ? [...new Set(p.applications.map(a => a?.manufacturerName).filter(Boolean))]
+    : [];
+
   return {
     productId: p.id ?? null,
     codigo: p.code ?? '—',
     aplicacion: p.application ?? p.description ?? supplier?.application ?? '—',
     marca: p.productBrand?.name ?? '—',
+    fabricante: fabricantes.join(', ') || null,
     rubro: p.category?.name ?? '—',
+    active: p.active ?? null,
+    webEnabled: p.webEnabled ?? null,
+    featured: p.featured ?? null,
     imagen: getPrimaryImageUrl(p) || supplier?.imageUrl || '',
     precioLista: supplier?.priceList ?? null,
     iva: supplier?.iva ?? null,
@@ -564,6 +610,29 @@ async function loadMarcas() {
   }
 }
 
+async function loadManufacturers() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/manufacturers/?active=true`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    filtroManufacturerId.querySelectorAll('option:not(:first-child)').forEach(o => o.remove());
+    (data.manufacturers || [])
+      .slice()
+      .sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'))
+      .forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        filtroManufacturerId.appendChild(opt);
+      });
+  } catch (e) {
+    console.error('Error al cargar fabricantes:', e);
+    throw e;
+  }
+}
+
 function populateYears() {
   const currentYear = new Date().getFullYear();
   for (let year = currentYear; year >= 1900; year--) {
@@ -577,12 +646,18 @@ function populateYears() {
 // ── Búsqueda (server-side, igual a tienda.js) ──────────────────────────────────
 function runSearch() {
   currentFilters = {
-    term:       filtroTerm.value.trim(),
-    categoryId: filtroCategoryId.value.trim(),
-    brandId:    filtroBrandId.value.trim(),
-    position:   filtroPosition.value.trim(),
-    side:       filtroSide.value.trim(),
-    year:       filtroYear.value.trim(),
+    term:           filtroTerm.value.trim(),
+    categoryId:     filtroCategoryId.value.trim(),
+    brandId:        filtroBrandId.value.trim(),
+    manufacturerId: filtroManufacturerId.value.trim(),
+    position:       filtroPosition.value.trim(),
+    side:           filtroSide.value.trim(),
+    year:           filtroYear.value.trim(),
+    active:         filtroActive.value.trim(),
+    inStock:        filtroInStock.value.trim(),
+    stockSupplier:  filtroStockSupplier.value.trim(),
+    featured:       filtroFeatured.value.trim(),
+    webEnabled:     filtroWebEnabled.value.trim(),
   };
   currentPage = 1;
   filterAplicacion = '';
@@ -596,7 +671,7 @@ function runSearch() {
 const FETCH_CHUNK_SIZE = 500;
 
 async function fetchAll() {
-  const { term, categoryId, brandId, position, side, year } = currentFilters;
+  const { term, categoryId, brandId, manufacturerId, position, side, year, active, inStock, stockSupplier, featured, webEnabled } = currentFilters;
 
   setLoading(true);
   hideError();
@@ -608,12 +683,18 @@ async function fetchAll() {
 
     while (all.length < total) {
       const params = new URLSearchParams();
-      if (term)       params.set('term', term);
-      if (categoryId) params.set('categoryId', categoryId);
-      if (brandId)    params.set('productBrandId', brandId);
-      if (position)   params.set('position', position);
-      if (side)       params.set('side', side);
-      if (year)       params.set('year', year);
+      if (term)           params.set('term', term);
+      if (categoryId)     params.set('categoryId', categoryId);
+      if (brandId)        params.set('productBrandId', brandId);
+      if (manufacturerId) params.set('manufacturerId', manufacturerId);
+      if (position)       params.set('position', position);
+      if (side)           params.set('side', side);
+      if (year)           params.set('year', year);
+      if (active)         params.set('active', active);
+      if (inStock)        params.set('inStock', inStock);
+      if (stockSupplier)  params.set('stockSupplier', stockSupplier);
+      if (featured)       params.set('featured', featured);
+      if (webEnabled)     params.set('webEnabled', webEnabled);
       params.set('page', page);
       params.set('limit', FETCH_CHUNK_SIZE);
 
@@ -639,12 +720,18 @@ async function fetchAll() {
     resultsCount.textContent = `${totalItems} producto${totalItems !== 1 ? 's' : ''}`;
 
     const parts = [];
-    if (term)       parts.push(`"${term}"`);
-    if (categoryId) parts.push(`categoría: ${filtroCategoryId.selectedOptions[0]?.textContent ?? categoryId}`);
-    if (brandId)    parts.push(`marca: ${filtroBrandId.selectedOptions[0]?.textContent ?? brandId}`);
-    if (position)   parts.push(`posición: ${filtroPosition.selectedOptions[0]?.textContent ?? position}`);
-    if (side)       parts.push(`lado: ${filtroSide.selectedOptions[0]?.textContent ?? side}`);
-    if (year)       parts.push(`año: ${year}`);
+    if (term)           parts.push(`"${term}"`);
+    if (categoryId)     parts.push(`categoría: ${filtroCategoryId.selectedOptions[0]?.textContent ?? categoryId}`);
+    if (brandId)        parts.push(`marca: ${filtroBrandId.selectedOptions[0]?.textContent ?? brandId}`);
+    if (manufacturerId) parts.push(`fabricante: ${filtroManufacturerId.selectedOptions[0]?.textContent ?? manufacturerId}`);
+    if (position)       parts.push(`posición: ${filtroPosition.selectedOptions[0]?.textContent ?? position}`);
+    if (side)           parts.push(`lado: ${filtroSide.selectedOptions[0]?.textContent ?? side}`);
+    if (year)           parts.push(`año: ${year}`);
+    if (active)         parts.push(`activo: ${active === 'true' ? 'sí' : 'no'}`);
+    if (inStock)        parts.push(`stock: ${inStock === 'true' ? 'con stock' : 'sin stock'}`);
+    if (stockSupplier)  parts.push(`stock proveedor: ${stockSupplier === 'true' ? 'con stock' : 'sin stock'}`);
+    if (featured)       parts.push(`destacado: ${featured === 'true' ? 'sí' : 'no'}`);
+    if (webEnabled)     parts.push(`visible en web: ${webEnabled === 'true' ? 'sí' : 'no'}`);
     resultsQuery.textContent = parts.join(' · ');
 
     resultsSection.style.display = '';
@@ -750,9 +837,13 @@ function renderPage() {
       </td>
       <td data-col="codigo"><span class="td-code">${escHtml(String(codigo))}</span></td>
       <td class="td-marca" data-col="marca"><span class="brand-badge ${escHtml(brandClass)}">${escHtml(String(marca))}</span></td>
+      <td data-col="fabricante">${p.fabricante ? escHtml(String(p.fabricante)) : '<span class="td-muted">—</span>'}</td>
       <td class="td-rubro" data-col="rubro"><span>${escHtml(String(rubro))}</span></td>
       <td class="td-aplicacion" data-col="aplicacion">${escHtml(String(desc))}</td>
       <td class="td-fuente" data-col="fuente"><span class="source-badge source-${escHtml(sourceKey)}">${escHtml(sourceLabel)}</span></td>
+      <td data-col="activo" style="text-align:center">${boolBadge(p.active)}</td>
+      <td data-col="web" style="text-align:center">${boolBadge(p.webEnabled)}</td>
+      <td data-col="destacado" style="text-align:center">${boolBadge(p.featured)}</td>
       <td class="td-precio-lista" data-col="precio-lista"><span class="price-symbol">$</span>${precioListaStr}</td>
       <td class="td-percent" data-col="iva-pct">${ivaStr}</td>
       <td class="td-costo-iva" data-col="iva-monto"><span class="price-symbol">$</span>${montoIvaStr}</td>
@@ -763,6 +854,7 @@ function renderPage() {
       <td class="td-precio-venta" data-col="p-sugerido"><span class="price-symbol">$</span>${precioVentaStr}</td>
       <td class="td-ganancia" data-col="ganancia">${gananciaCell}</td>
       <td class="td-stock" data-col="stock" style="text-align:center">${stockBadge(p)}</td>
+      <td data-col="stock-proveedor" style="text-align:center">${supplierStockBadge(p.stockProveedor)}</td>
       <td class="td-add" data-col="agregar">
         <button class="btn-add ${inCart ? 'in-cart' : ''}" data-key="${escHtml(cartKey)}"
                 title="${inCart ? 'Quitar del presupuesto' : 'Agregar al presupuesto'}"
@@ -1173,17 +1265,23 @@ btnVerPresupuesto.addEventListener('click', () => {
 // ── Eventos de búsqueda ───────────────────────────────────────────────────────
 btnBuscar.addEventListener('click', runSearch);
 
-[filtroTerm, filtroCategoryId, filtroBrandId, filtroPosition, filtroSide, filtroYear].forEach(input => {
+[filtroTerm, filtroCategoryId, filtroBrandId, filtroManufacturerId, filtroPosition, filtroSide, filtroYear, filtroActive, filtroInStock, filtroStockSupplier, filtroFeatured, filtroWebEnabled].forEach(input => {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') btnBuscar.click(); });
 });
 
 btnLimpiar.addEventListener('click', () => {
-  filtroTerm.value       = '';
-  filtroCategoryId.value = '';
-  filtroBrandId.value    = '';
-  filtroPosition.value   = '';
-  filtroSide.value       = '';
-  filtroYear.value       = '';
+  filtroTerm.value           = '';
+  filtroCategoryId.value     = '';
+  filtroBrandId.value        = '';
+  filtroManufacturerId.value = '';
+  filtroPosition.value       = '';
+  filtroSide.value           = '';
+  filtroYear.value           = '';
+  filtroActive.value         = 'true';
+  filtroInStock.value        = '';
+  filtroStockSupplier.value  = '';
+  filtroFeatured.value       = '';
+  filtroWebEnabled.value     = '';
   rawItems = [];
   allProducts = [];
   totalItems = 0;
@@ -1209,4 +1307,4 @@ initColumnsMenu();
 populateYears();
 loadCart();
 updateCartUI();
-maestroBoot({ loaders: [loadCategorias, loadMarcas] });
+maestroBoot({ loaders: [loadCategorias, loadMarcas, loadManufacturers] });

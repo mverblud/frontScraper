@@ -18,6 +18,7 @@ const filtroActive       = document.getElementById('filtro-active');
 const filtroInStock      = document.getElementById('filtro-in-stock');
 const filtroStockSupplier = document.getElementById('filtro-stock-supplier');
 const filtroFeatured     = document.getElementById('filtro-featured');
+const filtroHasSuggestedPrice = document.getElementById('filtro-has-suggested-price');
 const filtroWebEnabled   = document.getElementById('filtro-web-enabled');
 const btnBuscar          = document.getElementById('btn-buscar');
 const btnLimpiar         = document.getElementById('btn-limpiar');
@@ -64,6 +65,10 @@ const themeToggle = document.getElementById('theme-toggle');
 // ── Configuración de columnas (igual a catálogo-nuevo) ─────────────────────────
 const COLUMNS = [
   {
+    key: 'expand', label: '', align: 'center',
+    sortable: false, hideable: false
+  },
+  {
     key: 'foto', label: 'Foto', align: 'center',
     sortable: false, hideable: true
   },
@@ -91,6 +96,11 @@ const COLUMNS = [
     key: 'aplicacion', label: 'Aplicación', align: 'left',
     sortable: true, hideable: true, filter: 'text',
     sortValue: p => String(p.aplicacion ?? '')
+  },
+  {
+    key: 'proveedor', label: 'Proveedor', align: 'left',
+    sortable: true, hideable: true,
+    sortValue: p => String(p.proveedor ?? '')
   },
   {
     key: 'fuente', label: 'Fuente', align: 'center',
@@ -190,13 +200,17 @@ let allProducts     = [];  // productos adaptados a shape plano, TODA la búsque
 let totalItems      = 0;
 let currentPage      = 1;
 let pageSize         = parseInt(pageSizeSelect.value);
-let currentFilters   = { term: '', categoryId: '', brandId: '', manufacturerId: '', position: '', side: '', year: '', active: 'true', inStock: '', stockSupplier: '', featured: '', webEnabled: '' };
+let currentFilters   = { term: '', categoryId: '', brandId: '', manufacturerId: '', position: '', side: '', year: '', active: 'true', inStock: '', stockSupplier: '', featured: '', hasSuggestedPrice: '', webEnabled: '' };
 let filterAplicacion = ''; // filtro de texto client-side sobre la columna Aplicación
 
 let sortKey = 'marca';
 let sortDir = 'asc';
 
 let hiddenCols = new Set();
+
+// productId de las filas con el comparador de proveedores expandido. Se limpia en cada
+// búsqueda nueva (fetchAll); sobrevive a los re-render de renderPage (addToCart, sort, etc.)
+let expandedRows = new Set();
 
 let cart = {};
 
@@ -311,9 +325,38 @@ function getPrimaryImageUrl(p) {
   return images[0].url ?? '';
 }
 
+// ── Selección de proveedor (productos con más de un proveedor) ─────────────────
+// productId → índice elegido dentro de p.suppliers. Vive solo durante la búsqueda actual.
+let selectedSupplier = {};
+
+// Proveedor por defecto: prioriza el que tiene stock, y entre esos el más barato.
+// Si ninguno tiene stock, el más barato a secas. Sin datos comparables, el primero.
+function pickBestSupplierIndex(suppliers) {
+  if (!Array.isArray(suppliers) || suppliers.length === 0) return 0;
+  const withStock = suppliers
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => Number(s?.stockSupplier) > 0);
+  const pool = withStock.length > 0 ? withStock : suppliers.map((s, i) => ({ s, i }));
+  let best = pool[0];
+  for (const cand of pool) {
+    const bestPrice = Number(best.s?.suggestedPrice);
+    const candPrice = Number(cand.s?.suggestedPrice);
+    if (!isNaN(candPrice) && (isNaN(bestPrice) || candPrice < bestPrice)) best = cand;
+  }
+  return best.i;
+}
+
+function getSupplierIndex(p) {
+  const idx = selectedSupplier[p.id];
+  if (idx != null) return idx;
+  return pickBestSupplierIndex(p.suppliers);
+}
+
 // ── Adaptador: producto Maestro (crudo) → shape plano de la grilla/carrito ─────
 function adaptProduct(p) {
-  const supplier = Array.isArray(p.suppliers) && p.suppliers.length > 0 ? p.suppliers[0] : null;
+  const suppliers = Array.isArray(p.suppliers) ? p.suppliers : [];
+  const supplierIndex = getSupplierIndex(p);
+  const supplier = suppliers.length > 0 ? suppliers[supplierIndex] : null;
 
   // Stock combinado: propio (products.stock, lo que hay en el local de OV) prevalece
   // sobre el del proveedor (suppliers.stockSupplier).
@@ -360,9 +403,26 @@ function adaptProduct(p) {
     stockProveedor,
     stockEstado,
     ubicacion,
+    proveedor: supplier?.supplierName ?? null,
+    proveedorCodigo: supplier?.supplierProductCode ?? null,
+    supplierIndex,
+    suppliersCount: suppliers.length,
     _source: 'maestro',
     __raw: p
   };
+}
+
+// Cambia el proveedor activo de un producto: recalcula su shape adaptado, sincroniza
+// el carrito si ya estaba agregado, y actualiza allProducts para que sort/filtro/paginado
+// reflejen el precio nuevo. Se usa desde la grilla (fila expandida) y desde el modal.
+function setSupplier(rawProduct, idx) {
+  selectedSupplier[rawProduct.id] = idx;
+  const adapted = adaptProduct(rawProduct);
+  syncCartSupplier(adapted);
+  const i = allProducts.findIndex(x => x.productId === adapted.productId);
+  if (i >= 0) allProducts[i] = adapted;
+  renderPage();
+  return adapted;
 }
 
 function normalizeProduct(p) {
@@ -374,6 +434,8 @@ function normalizeProduct(p) {
     rubro: p.rubro ?? '—',
     foto: p.imagen ?? '',
     precioVenta: p.precioSugerido ?? 0,
+    proveedor: p.proveedor ?? null,
+    proveedorCodigo: p.proveedorCodigo ?? null,
     _source: getSourceKey(p)
   };
 }
@@ -525,6 +587,11 @@ function applyColumnVisibility() {
       el.style.display = hidden ? 'none' : '';
     });
   });
+  // El colSpan de las filas de proveedores expandidas debe seguir cubriendo todo el ancho.
+  const visibleColCount = COLUMNS.filter(c => !hiddenCols.has(c.key)).length;
+  document.querySelectorAll('.sup-detalle-row > td').forEach(td => {
+    td.colSpan = visibleColCount;
+  });
 }
 
 function initColumnsMenu() {
@@ -657,6 +724,7 @@ function runSearch() {
     inStock:        filtroInStock.value.trim(),
     stockSupplier:  filtroStockSupplier.value.trim(),
     featured:       filtroFeatured.value.trim(),
+    hasSuggestedPrice: filtroHasSuggestedPrice.value.trim(),
     webEnabled:     filtroWebEnabled.value.trim(),
   };
   currentPage = 1;
@@ -671,7 +739,7 @@ function runSearch() {
 const FETCH_CHUNK_SIZE = 500;
 
 async function fetchAll() {
-  const { term, categoryId, brandId, manufacturerId, position, side, year, active, inStock, stockSupplier, featured, webEnabled } = currentFilters;
+  const { term, categoryId, brandId, manufacturerId, position, side, year, active, inStock, stockSupplier, featured, hasSuggestedPrice, webEnabled } = currentFilters;
 
   setLoading(true);
   hideError();
@@ -694,6 +762,7 @@ async function fetchAll() {
       if (inStock)        params.set('inStock', inStock);
       if (stockSupplier)  params.set('stockSupplier', stockSupplier);
       if (featured)       params.set('featured', featured);
+      if (hasSuggestedPrice) params.set('hasSuggestedPrice', hasSuggestedPrice);
       if (webEnabled)     params.set('webEnabled', webEnabled);
       params.set('page', page);
       params.set('limit', FETCH_CHUNK_SIZE);
@@ -712,8 +781,10 @@ async function fetchAll() {
       if (lote.length === 0) break; // corta si el servidor deja de devolver items
     }
 
-    rawItems    = all;
-    totalItems  = total;
+    rawItems        = all;
+    totalItems      = total;
+    selectedSupplier = {};
+    expandedRows.clear();
     allProducts = rawItems.map(adaptProduct);
     sortProducts();
 
@@ -731,6 +802,7 @@ async function fetchAll() {
     if (inStock)        parts.push(`stock: ${inStock === 'true' ? 'con stock' : 'sin stock'}`);
     if (stockSupplier)  parts.push(`stock proveedor: ${stockSupplier === 'true' ? 'con stock' : 'sin stock'}`);
     if (featured)       parts.push(`destacado: ${featured === 'true' ? 'sí' : 'no'}`);
+    if (hasSuggestedPrice) parts.push(`precio sugerido: ${hasSuggestedPrice === 'true' ? 'sí' : 'no'}`);
     if (webEnabled)     parts.push(`visible en web: ${webEnabled === 'true' ? 'sí' : 'no'}`);
     resultsQuery.textContent = parts.join(' · ');
 
@@ -749,6 +821,92 @@ function getFilteredProducts() {
   const q = filterAplicacion.trim().toLowerCase();
   if (!q) return allProducts;
   return allProducts.filter(p => String(p.aplicacion ?? '').toLowerCase().includes(q));
+}
+
+// ── Comparador de proveedores (fila expandida de la grilla + modal de detalle) ─
+// Tabla comparativa de todos los proveedores de un producto Maestro crudo. opts.showAdd
+// agrega un botón "+" por fila para elegir ese proveedor y sumarlo directo al presupuesto.
+function renderSupplierCompare(rawProduct, opts = {}) {
+  const showAdd   = opts.showAdd !== false;
+  const suppliers = Array.isArray(rawProduct.suppliers) ? rawProduct.suppliers : [];
+
+  if (suppliers.length === 0) {
+    return '<p class="sup-detalle-empty">Sin proveedores cargados.</p>';
+  }
+
+  const activeIdx = getSupplierIndex(rawProduct);
+  const prices = suppliers
+    .map(s => Number(s?.suggestedPrice))
+    .filter(v => !isNaN(v));
+  const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+
+  const rows = suppliers.map((s, idx) => {
+    const isSelected = idx === activeIdx;
+    const price  = s?.suggestedPrice != null ? Number(s.suggestedPrice) : null;
+    const isBest = minPrice != null && price != null && price === minPrice;
+    const deltaHtml = (!isBest && price != null && minPrice != null)
+      ? `<div class="sup-delta">+$${fmtPrice(price - minPrice)} (+${fmtPercent(((price - minPrice) / minPrice) * 100)})</div>`
+      : '';
+
+    return `
+      <tr class="${isSelected ? 'is-selected' : ''}" data-idx="${idx}">
+        <td class="sup-check">${isSelected ? '<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.2 3.2L11 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</td>
+        <td>${escHtml(s?.supplierName ?? '—')}${isBest ? '<span class="sup-best">más barato</span>' : ''}</td>
+        <td>${escHtml(s?.supplierProductCode ?? '—')}</td>
+        <td class="th-num">${s?.priceList   != null ? `$${fmtPrice(s.priceList)}`   : '—'}</td>
+        <td class="th-num">${s?.costWithIva != null ? `$${fmtPrice(s.costWithIva)}` : '—'}</td>
+        <td class="th-num sup-price-venta">${price != null ? `$${fmtPrice(price)}` : '—'}${deltaHtml}</td>
+        <td class="th-center">${supplierStockBadge(s?.stockSupplier)}</td>
+        <td>${escHtml(fmtDate(s?.updatedAt))}</td>
+        ${showAdd ? `<td class="th-center"><button class="btn-add sup-add-btn" data-idx="${idx}" title="Seleccionar y agregar al presupuesto"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></td>` : ''}
+      </tr>`;
+  }).join('');
+
+  return `
+    <table class="sup-compare">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Proveedor</th>
+          <th>Cód. prov.</th>
+          <th class="th-num">Precio lista</th>
+          <th class="th-num">Costo IVA</th>
+          <th class="th-num">P. sugerido</th>
+          <th class="th-center">Stock prov.</th>
+          <th>Actualizado</th>
+          ${showAdd ? '<th></th>' : ''}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// Conecta los clics del comparador recién insertado en `container`: elegir fila cambia el
+// proveedor activo (setSupplier), y el botón "+" además lo agrega al presupuesto.
+// `afterChange` es opcional y se usa para repintar contextos que renderPage() no cubre
+// (el modal de detalle no se recalcula solo).
+function wireSupplierCompare(container, rawProduct, afterChange) {
+  const table = container.querySelector('.sup-compare');
+  if (!table) return;
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('.sup-add-btn')) return;
+      setSupplier(rawProduct, Number(tr.dataset.idx));
+      if (afterChange) afterChange();
+    });
+  });
+  table.querySelectorAll('.sup-add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // setSupplier ya sincroniza precio/proveedor si el producto está en el carrito
+      // (syncCartSupplier); acá solo falta darlo de alta si todavía no estaba —
+      // por eso NO se usa addToCart genérico, que sumaría una unidad de más.
+      const adapted = setSupplier(rawProduct, Number(btn.dataset.idx));
+      ensureInCart(adapted);
+      if (afterChange) afterChange();
+    });
+  });
 }
 
 // ── Render tabla (paginación client-side sobre el resultado completo filtrado) ──
@@ -778,6 +936,9 @@ function renderPage() {
     const tr = document.createElement('tr');
     tr.style.cursor = 'pointer';
     if (p.stockEstado === 'propio') tr.classList.add('row-stock-local');
+    const hasMultiSupplier = p.suppliersCount > 1;
+    if (hasMultiSupplier) tr.classList.add('quote-row');
+    if (hasMultiSupplier && expandedRows.has(p.productId)) tr.classList.add('expanded');
 
     const codigo      = p.codigo         ?? '—';
     const desc        = p.aplicacion     ?? '—';
@@ -831,7 +992,14 @@ function renderPage() {
     const cartKey = `${sourceKey}:${codigo}`;
     const inCart  = !!cart[cartKey];
 
+    const provChip = p.proveedor
+      ? `<span class="sup-chip${hasMultiSupplier ? ' is-multi' : ''}">${escHtml(p.proveedor)}${hasMultiSupplier ? `<span class="sup-chip-count">${p.suppliersCount}</span>` : ''}</span>`
+      : '<span class="td-muted">—</span>';
+
     tr.innerHTML = `
+      <td class="quote-row-chevron" data-col="expand">
+        ${hasMultiSupplier ? `<svg class="row-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 1l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>` : ''}
+      </td>
       <td class="td-foto" data-col="foto">
         ${foto ? `<img src="${escHtml(foto)}" alt="Foto del producto" class="product-thumb" loading="lazy" onerror="this.style.display='none'"/>` : '<span class="no-photo">—</span>'}
       </td>
@@ -840,6 +1008,7 @@ function renderPage() {
       <td data-col="fabricante">${p.fabricante ? escHtml(String(p.fabricante)) : '<span class="td-muted">—</span>'}</td>
       <td class="td-rubro" data-col="rubro"><span>${escHtml(String(rubro))}</span></td>
       <td class="td-aplicacion" data-col="aplicacion">${escHtml(String(desc))}</td>
+      <td class="td-proveedor" data-col="proveedor">${provChip}</td>
       <td class="td-fuente" data-col="fuente"><span class="source-badge source-${escHtml(sourceKey)}">${escHtml(sourceLabel)}</span></td>
       <td data-col="activo" style="text-align:center">${boolBadge(p.active)}</td>
       <td data-col="web" style="text-align:center">${boolBadge(p.webEnabled)}</td>
@@ -880,7 +1049,36 @@ function renderPage() {
     // Click en la fila → modal de detalle rico (datos Maestro crudos)
     tr.addEventListener('click', () => openDetalle(p.__raw));
 
+    // Chevron y chip de proveedor: togglean el comparador inline en vez de abrir el modal
+    if (hasMultiSupplier) {
+      const toggleExpand = (e) => {
+        e.stopPropagation();
+        if (expandedRows.has(p.productId)) expandedRows.delete(p.productId);
+        else expandedRows.add(p.productId);
+        renderPage();
+      };
+      tr.querySelector('[data-col="expand"]').addEventListener('click', toggleExpand);
+      tr.querySelector('[data-col="proveedor"] .sup-chip')?.addEventListener('click', toggleExpand);
+    }
+
     productsBody.appendChild(tr);
+
+    if (hasMultiSupplier && expandedRows.has(p.productId)) {
+      const detalleTr = document.createElement('tr');
+      detalleTr.className = 'sup-detalle-row';
+      const visibleColCount = COLUMNS.filter(c => !hiddenCols.has(c.key)).length;
+      const detalleTd = document.createElement('td');
+      detalleTd.colSpan = visibleColCount;
+      detalleTd.innerHTML = `
+        <div class="sup-detalle">
+          <div class="sadar-section-label">Proveedores (${p.suppliersCount})</div>
+          ${renderSupplierCompare(p.__raw, { showAdd: true })}
+        </div>
+      `;
+      detalleTr.appendChild(detalleTd);
+      productsBody.appendChild(detalleTr);
+      wireSupplierCompare(detalleTr, p.__raw);
+    }
   });
 
   paginationInfo.innerHTML = `Mostrando <strong>${start + 1}–${end}</strong> de <strong>${total}</strong>`;
@@ -938,13 +1136,44 @@ function addToCart(product) {
   const normalized = normalizeProduct(product);
   const key = `${normalized._source}:${normalized.codigo}`;
   if (cart[key]) {
-    cart[key].qty += 1;
+    // Mismo producto, proveedor distinto al que ya estaba cotizado (ej.: se agregó con un
+    // proveedor, se cambió la selección en la grilla/modal, y se vuelve a agregar): se
+    // actualiza el precio/proveedor de la línea existente en vez de sumarla como si fuera
+    // un ítem nuevo — sigue siendo el mismo producto en el presupuesto.
+    if (cart[key].product.proveedor !== normalized.proveedor) {
+      cart[key].product = normalized;
+    } else {
+      cart[key].qty += 1;
+    }
   } else {
     cart[key] = { product: normalized, qty: 1 };
   }
   saveCart();
   updateCartUI();
   renderPage();
+}
+
+// Actualiza el precio/proveedor de una línea ya presente en el carrito cuando se cambia
+// el proveedor seleccionado de un producto, sin tocar la cantidad cargada.
+function syncCartSupplier(adaptedProduct) {
+  const key = `maestro:${adaptedProduct.codigo}`;
+  if (!cart[key]) return;
+  cart[key].product = normalizeProduct(adaptedProduct);
+  saveCart();
+  updateCartUI();
+}
+
+// Da de alta el producto en el carrito solo si todavía no estaba (qty 1). Se usa desde
+// el comparador de proveedores: ahí el cambio de proveedor de un ítem ya cargado lo
+// resuelve syncCartSupplier (dentro de setSupplier), así que agregar de nuevo no debe
+// sumar una unidad — solo cubre el caso de un producto que se agrega por primera vez.
+function ensureInCart(adaptedProduct) {
+  const normalized = normalizeProduct(adaptedProduct);
+  const key = `${normalized._source}:${normalized.codigo}`;
+  if (cart[key]) return;
+  cart[key] = { product: normalized, qty: 1 };
+  saveCart();
+  updateCartUI();
 }
 
 function removeFromCart(key) {
@@ -992,10 +1221,13 @@ function updateCartUI() {
     const subtotal = pVenta * qty;
     totalSum += subtotal;
 
-    const sourceTag = product._source === 'rm' ? 'RM'
-      : product._source === 'asm' ? 'ASM'
-      : product._source === 'maestro' ? 'MAESTRO'
-      : product._source === 'nv' ? 'NV' : '';
+    // Preferimos mostrar el proveedor real (SADAR, CORVEN…) sobre la fuente (MAESTRO);
+    // los ítems ya guardados en localStorage antes de este cambio no tienen `proveedor`.
+    const sourceTag = product.proveedor
+      || (product._source === 'rm' ? 'RM'
+        : product._source === 'asm' ? 'ASM'
+        : product._source === 'maestro' ? 'MAESTRO'
+        : product._source === 'nv' ? 'NV' : '');
 
     const div = document.createElement('div');
     div.className = 'cart-item';
@@ -1052,35 +1284,41 @@ function openDetalle(p) {
   detalleBody.innerHTML = '';
   detalleAdd.__rawProduct = p;
 
-  const heroSupplier = suppliers.length > 0 ? suppliers[0] : null;
-  const heroProdImg   = getPrimaryImageUrl(p);
-  const heroSupImg    = heroSupplier?.imageUrl ?? '';
+  const heroSupplier = suppliers.length > 0 ? suppliers[getSupplierIndex(p)] : null;
   const productAplicacion = p.application ?? '';
 
   detalleTitle.textContent = `${codigo}${productAplicacion ? ` - ${productAplicacion}` : ''}`;
-  const heroMarca  = heroSupplier?.brand   ?? p.productBrand?.name ?? '—';
-  const heroRubro  = heroSupplier?.section ?? p.category?.name    ?? '—';
+  // Info propia del producto (no depende del proveedor elegido) — es lo que va al costado
+  // de las imágenes; el precio en cambio SÍ depende del proveedor y va en su propia
+  // sección a lo ancho, más abajo.
+  const heroMarca  = p.productBrand?.name ?? heroSupplier?.brand   ?? '—';
+  const heroRubro  = p.category?.name     ?? heroSupplier?.section ?? '—';
   const heroFuente = heroSupplier?.supplierName ?? '—';
   const heroGanancia = (heroSupplier?.suggestedPrice != null && heroSupplier?.costWithIva != null)
     ? heroSupplier.suggestedPrice - heroSupplier.costWithIva
     : null;
 
+  // Galería: la foto propia del producto (BD) + una por cada proveedor cargado.
+  const galleryImages = [
+    { label: 'Imagen BD', url: getPrimaryImageUrl(p) },
+    ...suppliers.map(s => ({
+      label: s?.supplierName ? `Imagen ${s.supplierName}` : 'Imagen proveedor',
+      url: s?.imageUrl ?? '',
+    })),
+  ];
+
   const heroSection = document.createElement('div');
   heroSection.className = 'sadar-hero';
   heroSection.innerHTML = `
     <div class="sadar-hero-images">
-      <div class="sadar-hero-image-block">
-        <span class="sadar-hero-image-label">Imagen BD</span>
-        <div class="sadar-hero-image-box">
-          ${heroProdImg ? `<img src="${escHtml(heroProdImg)}" alt="Producto ${escHtml(String(codigo))}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'td-muted',textContent:'Sin foto'}))"/>` : '<span class="td-muted">Sin foto</span>'}
+      ${galleryImages.map(img => `
+        <div class="sadar-hero-image-block">
+          <span class="sadar-hero-image-label">${escHtml(img.label)}</span>
+          <div class="sadar-hero-image-box">
+            ${img.url ? `<img src="${escHtml(img.url)}" alt="${escHtml(img.label)} — ${escHtml(String(codigo))}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'td-muted',textContent:'Sin foto'}))"/>` : '<span class="td-muted">Sin foto</span>'}
+          </div>
         </div>
-      </div>
-      <div class="sadar-hero-image-block">
-        <span class="sadar-hero-image-label">Imagen Proveedor</span>
-        <div class="sadar-hero-image-box">
-          ${heroSupImg ? `<img src="${escHtml(heroSupImg)}" alt="Proveedor ${escHtml(String(codigo))}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'td-muted',textContent:'Sin foto'}))"/>` : '<span class="td-muted">Sin foto</span>'}
-        </div>
-      </div>
+      `).join('')}
     </div>
     <div class="sadar-hero-info">
       <div class="product-modal-tags">
@@ -1097,25 +1335,6 @@ function openDetalle(p) {
           <span class="product-modal-tag-value">${ownStockBadge(adapted)}</span>
         </div>
       </div>
-      ${heroSupplier ? `
-      <div class="product-modal-metrics">
-        ${[
-          { label: 'Precio Lista',    val: heroSupplier.priceList    != null ? `$${fmtPrice(heroSupplier.priceList)}`    : '—' },
-          { label: 'Costo IVA',       val: heroSupplier.costWithIva  != null ? `$${fmtPrice(heroSupplier.costWithIva)}`  : '—' },
-          { label: 'Precio Sugerido', val: heroSupplier.suggestedPrice != null ? `$${fmtPrice(heroSupplier.suggestedPrice)}` : '—', highlight: true },
-          { label: 'IVA',             val: heroSupplier.iva          != null ? fmtPercent(heroSupplier.iva)              : '—' },
-          { label: 'Descuento',       val: heroSupplier.discount     != null ? fmtPercent(heroSupplier.discount)         : '—' },
-          { label: 'Monto IVA',       val: heroSupplier.ivaAmount    != null ? `$${fmtPrice(heroSupplier.ivaAmount)}`    : '—' },
-          { label: 'Costo Neto',      val: heroSupplier.netCost      != null ? `$${fmtPrice(heroSupplier.netCost)}`      : '—' },
-          { label: 'Margen',          val: heroSupplier.margin       != null ? fmtPercent(heroSupplier.margin)           : '—' },
-          { label: 'Ganancia',        val: heroGanancia               != null ? `$${fmtPrice(heroGanancia)}`             : '—' },
-        ].map(m => `
-          <div class="product-modal-metric-item${m.highlight ? ' highlight' : ''}">
-            <span class="product-modal-metric-label">${m.label}</span>
-            <span class="product-modal-metric-val">${m.val}</span>
-          </div>
-        `).join('')}
-      </div>` : ''}
       ${dimEntries.length > 0 ? `
       <div class="sadar-section" style="margin-top:0">
         <div class="sadar-section-label">Dimensiones</div>
@@ -1139,71 +1358,110 @@ function openDetalle(p) {
             </div>`).join('')}
         </div>
       </div>` : ''}
-      ${heroSupplier ? `
+      ${applications.length > 0 ? `
       <div class="sadar-section" style="margin-top:0">
-        <div class="sadar-section-label">Proveedor</div>
-        <div class="sadar-dim-grid">
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Nombre</span>
-            <span class="sadar-dim-val">${escHtml(heroFuente)}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Código prov.</span>
-            <span class="sadar-dim-val">${escHtml(heroSupplier.supplierProductCode ?? '—')}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Aplicación</span>
-            <span class="sadar-dim-val">${escHtml(heroSupplier.application ?? '—')}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Stock</span>
-            <span class="sadar-dim-val">${supplierStockBadge(heroSupplier.stockSupplier)}</span>
-          </div>
-          <div class="sadar-dim-item">
-            <span class="sadar-dim-label">Actualizado</span>
-            <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.updatedAt))}</span>
-          </div>
+        <div class="sadar-section-label">Aplicaciones (${applications.length})</div>
+        <div class="table-wrapper">
+          <table class="sadar-apps-table">
+            <thead>
+              <tr>
+                <th>Fabricante</th>
+                <th>Modelo</th>
+                <th>Posición</th>
+                <th>Lado</th>
+                <th class="th-num">Año</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${applications.map(a => {
+                const anio = a.yearOriginal ?? [a.yearFrom, a.yearTo].filter(Boolean).join('–') ?? '—';
+                return `
+                  <tr>
+                    <td>${escHtml(a.manufacturerName ?? '—')}</td>
+                    <td>${escHtml(a.modelName ?? '—')}</td>
+                    <td>${escHtml(a.position ?? '—')}</td>
+                    <td>${escHtml(a.side ?? '—')}</td>
+                    <td class="th-num">${escHtml(String(anio || '—'))}</td>
+                    <td>${escHtml(a.description ?? '—')}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
         </div>
       </div>` : ''}
     </div>
   `;
   detalleBody.appendChild(heroSection);
 
-  if (applications.length > 0) {
-    const appsSection = document.createElement('div');
-    appsSection.className = 'sadar-section';
-    appsSection.innerHTML = `
-      <div class="sadar-section-label">Aplicaciones (${applications.length})</div>
-      <div class="table-wrapper">
-        <table class="sadar-apps-table">
-          <thead>
-            <tr>
-              <th>Fabricante</th>
-              <th>Modelo</th>
-              <th>Posición</th>
-              <th>Lado</th>
-              <th class="th-num">Año</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${applications.map(a => {
-              const anio = a.yearOriginal ?? [a.yearFrom, a.yearTo].filter(Boolean).join('–') ?? '—';
-              return `
-                <tr>
-                  <td>${escHtml(a.manufacturerName ?? '—')}</td>
-                  <td>${escHtml(a.modelName ?? '—')}</td>
-                  <td>${escHtml(a.position ?? '—')}</td>
-                  <td>${escHtml(a.side ?? '—')}</td>
-                  <td class="th-num">${escHtml(String(anio || '—'))}</td>
-                  <td>${escHtml(a.description ?? '—')}</td>
-                </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
+  // Precio: a lo ancho, debajo del hero. Solo tiene sentido como bloque aparte cuando hay
+  // un único proveedor — con 2+ proveedores esta misma info (lista/costo/sugerido/stock)
+  // ya está en el comparador de abajo, mostrarla dos veces es redundante.
+  if (heroSupplier && suppliers.length <= 1) {
+    const priceSection = document.createElement('div');
+    priceSection.className = 'sadar-section sup-modal-section';
+    priceSection.innerHTML = `
+      <div class="sadar-section-label">Precio</div>
+      <div class="product-modal-metrics">
+        ${[
+          { label: 'Precio Lista',    val: heroSupplier.priceList    != null ? `$${fmtPrice(heroSupplier.priceList)}`    : '—' },
+          { label: 'Costo IVA',       val: heroSupplier.costWithIva  != null ? `$${fmtPrice(heroSupplier.costWithIva)}`  : '—' },
+          { label: 'Precio Sugerido', val: heroSupplier.suggestedPrice != null ? `$${fmtPrice(heroSupplier.suggestedPrice)}` : '—', highlight: true },
+          { label: 'IVA',             val: heroSupplier.iva          != null ? fmtPercent(heroSupplier.iva)              : '—' },
+          { label: 'Descuento',       val: heroSupplier.discount     != null ? fmtPercent(heroSupplier.discount)         : '—' },
+          { label: 'Monto IVA',       val: heroSupplier.ivaAmount    != null ? `$${fmtPrice(heroSupplier.ivaAmount)}`    : '—' },
+          { label: 'Costo Neto',      val: heroSupplier.netCost      != null ? `$${fmtPrice(heroSupplier.netCost)}`      : '—' },
+          { label: 'Margen',          val: heroSupplier.margin       != null ? fmtPercent(heroSupplier.margin)           : '—' },
+          { label: 'Ganancia',        val: heroGanancia               != null ? `$${fmtPrice(heroGanancia)}`             : '—' },
+        ].map(m => `
+          <div class="product-modal-metric-item${m.highlight ? ' highlight' : ''}">
+            <span class="product-modal-metric-label">${m.label}</span>
+            <span class="product-modal-metric-val">${m.val}</span>
+          </div>
+        `).join('')}
       </div>
     `;
-    detalleBody.appendChild(appsSection);
+    detalleBody.appendChild(priceSection);
+  }
+
+  if (suppliers.length > 1) {
+    const providerSection = document.createElement('div');
+    providerSection.className = 'sadar-section sup-modal-section';
+    providerSection.innerHTML = `
+      <div class="sadar-section-label">Proveedores (${suppliers.length})</div>
+      ${renderSupplierCompare(p, { showAdd: false })}
+    `;
+    detalleBody.appendChild(providerSection);
+    wireSupplierCompare(providerSection, p, () => openDetalle(p));
+  } else if (heroSupplier) {
+    const providerSection = document.createElement('div');
+    providerSection.className = 'sadar-section';
+    providerSection.innerHTML = `
+      <div class="sadar-section-label">Proveedor</div>
+      <div class="sadar-dim-grid">
+        <div class="sadar-dim-item">
+          <span class="sadar-dim-label">Nombre</span>
+          <span class="sadar-dim-val">${escHtml(heroFuente)}</span>
+        </div>
+        <div class="sadar-dim-item">
+          <span class="sadar-dim-label">Código prov.</span>
+          <span class="sadar-dim-val">${escHtml(heroSupplier.supplierProductCode ?? '—')}</span>
+        </div>
+        <div class="sadar-dim-item">
+          <span class="sadar-dim-label">Aplicación</span>
+          <span class="sadar-dim-val">${escHtml(heroSupplier.application ?? '—')}</span>
+        </div>
+        <div class="sadar-dim-item">
+          <span class="sadar-dim-label">Stock</span>
+          <span class="sadar-dim-val">${supplierStockBadge(heroSupplier.stockSupplier)}</span>
+        </div>
+        <div class="sadar-dim-item">
+          <span class="sadar-dim-label">Actualizado</span>
+          <span class="sadar-dim-val">${escHtml(fmtDate(heroSupplier.updatedAt))}</span>
+        </div>
+      </div>
+    `;
+    detalleBody.appendChild(providerSection);
   }
 
   if (images.length === 0 && dimEntries.length === 0 && applications.length === 0 &&
@@ -1265,7 +1523,7 @@ btnVerPresupuesto.addEventListener('click', () => {
 // ── Eventos de búsqueda ───────────────────────────────────────────────────────
 btnBuscar.addEventListener('click', runSearch);
 
-[filtroTerm, filtroCategoryId, filtroBrandId, filtroManufacturerId, filtroPosition, filtroSide, filtroYear, filtroActive, filtroInStock, filtroStockSupplier, filtroFeatured, filtroWebEnabled].forEach(input => {
+[filtroTerm, filtroCategoryId, filtroBrandId, filtroManufacturerId, filtroPosition, filtroSide, filtroYear, filtroActive, filtroInStock, filtroStockSupplier, filtroFeatured, filtroHasSuggestedPrice, filtroWebEnabled].forEach(input => {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') btnBuscar.click(); });
 });
 
@@ -1281,6 +1539,7 @@ btnLimpiar.addEventListener('click', () => {
   filtroInStock.value        = '';
   filtroStockSupplier.value  = '';
   filtroFeatured.value       = '';
+  filtroHasSuggestedPrice.value = '';
   filtroWebEnabled.value     = '';
   rawItems = [];
   allProducts = [];

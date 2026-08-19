@@ -1307,7 +1307,7 @@ td { padding: 10px 16px; font-size: 0.82rem; color: var(--text); vertical-align:
   .drawer-close, .cart-btn, .theme-toggle, .btn-imprimir,
   .btn-clear-cart, .qty-control, .cart-item-remove,
   .page-title, .page-content, .drawer-empty svg,
-  .drawer-actions, .col-picker { display: none !important; }
+  .drawer-actions, .col-picker, .sup-detalle-row { display: none !important; }
   
   .layout { margin-left: 0; }
   body { background: white !important; margin: 0; padding: 0; font-size: 11pt; }
@@ -2742,3 +2742,90 @@ tr.row-stock-local:hover > td { background: rgba(34, 197, 94, .11); }
   color: var(--brand-text);
 }
 [data-theme="dark"] .tienda-card-price { color: var(--brand); }
+
+/* ═══ PRESUPUESTOS: multi-proveedor (chip en grilla + comparador expandible) ═ */
+
+/* Chip "Proveedor" en la columna de la grilla. Chip plano si el producto tiene un solo
+   proveedor; con acento de marca + contador cuando hay más de uno (invita a expandir). */
+.sup-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 5px;
+  font-size: 0.72rem; font-weight: 500;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  white-space: nowrap;
+}
+.sup-chip.is-multi {
+  background: var(--brand-light); border-color: var(--brand); color: var(--brand-text);
+  cursor: pointer; font-weight: 600;
+}
+[data-theme="dark"] .sup-chip.is-multi { background: rgba(255,186,0,0.1); color: var(--brand); }
+.sup-chip-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 15px; height: 15px; padding: 0 4px;
+  border-radius: 999px; background: var(--brand); color: #1a0e00;
+  font-size: 0.62rem; font-weight: 700; line-height: 1;
+}
+
+/* Fila de detalle expandible con el comparador (misma mecánica que .quote-row/.quote-detalle) */
+.sup-detalle-row > td { padding: 0; vertical-align: top; }
+.sup-detalle {
+  padding: 14px 20px 16px; background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  animation: fadeUp 0.2s ease both;
+}
+.sup-detalle .sadar-section-label { margin-bottom: 8px; }
+.sup-modal-section .sup-compare { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+.sup-compare { width: 100%; border-collapse: collapse; }
+.sup-compare th {
+  padding: 6px 10px; font-size: 0.65rem; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+/* Debe ganarle a ".sup-compare th" en especificidad, si no los encabezados quedan
+   alineados a la izquierda mientras los valores de abajo van a la derecha/centro. */
+.sup-compare th.th-num { text-align: right; }
+.sup-compare th.th-center { text-align: center; }
+.sup-compare td {
+  padding: 7px 10px; font-size: 0.8rem; color: var(--text); vertical-align: middle;
+}
+.sup-compare .sup-price-venta { color: var(--green); font-weight: 700; }
+.sup-compare tbody tr { cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.sup-compare tbody tr:last-child { border-bottom: none; }
+.sup-compare tbody tr:hover { background: var(--surface); }
+.sup-compare tbody tr.is-selected {
+  background: var(--brand-light);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+[data-theme="dark"] .sup-compare tbody tr.is-selected { background: rgba(255,186,0,0.08); }
+.sup-compare .sup-check { width: 22px; color: var(--brand); }
+.sup-compare .sup-best {
+  display: inline-block; margin-left: 6px;
+  padding: 1px 6px; border-radius: 999px;
+  background: var(--green-light); color: var(--green); border: 1px solid var(--green-border);
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+.sup-delta { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
+.sup-detalle-empty { color: var(--text-muted); font-size: 0.82rem; padding: 4px 0; }
+
+/* Sección "Precio y proveedor" del modal: a lo ancho, debajo del hero (no más apretada
+   en la columna angosta junto a las imágenes). El precio sugerido se destaca en verde
+   (precio de venta), no en el amarillo de marca que usa el resto de las métricas. */
+.sup-modal-section .product-modal-metrics { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.sup-modal-section .product-modal-metric-item.highlight {
+  background: var(--green-light); border-color: var(--green-border);
+}
+.sup-modal-section .product-modal-metric-item.highlight .product-modal-metric-val { color: var(--green); }
+.sup-modal-section .sup-compare { margin-top: 12px; }
+
+/* Galería de imágenes del hero: propia (BD) + una por proveedor. Grid en vez de
+   columna fija para acomodar n fotos sin que cada una quede minúscula ni la lista
+   se dispare de alto. */
+.sadar-hero-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  align-content: start;
+  gap: 10px;
+}
+.sadar-hero-image-box { height: 120px; }

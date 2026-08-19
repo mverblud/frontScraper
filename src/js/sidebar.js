@@ -71,23 +71,6 @@
       </svg>`,
     },
     {
-      href: 'catalogo-sadar.html',
-      label: 'Catálogo SADAR',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="4.5" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M4 6v1.4M6 6v2.2M8 6v1.4M10 6v2.2M12 6v1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      </svg>`,
-    },
-    {
-      href: 'catalogo-maestro.html',
-      label: 'Productos',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M8 2l5 2.8v6.4L8 14 3 11.2V4.8L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M3 4.8L8 7.6l5-2.8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M8 7.6V14" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-      </svg>`,
-    },
-    {
       href: 'tienda.html',
       label: 'Simulación Tienda Web',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">

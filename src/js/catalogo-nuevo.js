@@ -6,6 +6,7 @@ const DEFAULT_HIDDEN_COLS = ['iva-pct', 'iva-monto', 'desc-pct', 'margen'];
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const rubroSelect        = document.getElementById('rubro');
+const rubroError         = document.getElementById('rubro-error');
 const terminoInput       = document.getElementById('termino');
 const terminoError       = document.getElementById('termino-error');
 const terminoBadge       = document.getElementById('termino-badge');
@@ -480,6 +481,23 @@ carModelSelect.addEventListener('change', () => {
 });
 
 // ── Validación ─────────────────────────────────────────────────────────────────
+function validateRubro() {
+  if (!rubroSelect.value) {
+    rubroSelect.classList.add('has-error');
+    rubroError.classList.add('visible');
+    return false;
+  }
+  rubroSelect.classList.remove('has-error');
+  rubroError.classList.remove('visible');
+  return true;
+}
+rubroSelect.addEventListener('change', () => {
+  if (rubroSelect.value) {
+    rubroSelect.classList.remove('has-error');
+    rubroError.classList.remove('visible');
+  }
+});
+
 function validateTermino() {
   const val = terminoInput.value.trim();
   if (!val) {
@@ -522,6 +540,8 @@ btnBuscar.addEventListener('click', async () => {
   const brandVal = carBrandSelect.value;
   const rubroId  = rubroSelect.value;
 
+  const rubroOk = validateRubro();
+
   // Determinar modo
   const usarTexto = !!termino && !brandVal;
   const usarCar   = !!modelVal;
@@ -544,11 +564,13 @@ btnBuscar.addEventListener('click', async () => {
     return;
   }
 
+  if (!rubroOk) return;
+
   const codigoAuto = usarCar ? modelVal.toLowerCase() : termino;
 
   const requestBody = {
     codigoAuto,
-    rubroId: rubroId ? parseInt(rubroId) : ""
+    rubroId: parseInt(rubroId)
   };
 
   setLoading(true);
@@ -609,6 +631,8 @@ btnBuscar.addEventListener('click', async () => {
 // ── Limpiar ────────────────────────────────────────────────────────────────────
 btnLimpiar.addEventListener('click', () => {
   rubroSelect.value = '';
+  rubroSelect.classList.remove('has-error');
+  rubroError.classList.remove('visible');
   terminoInput.value = '';
   terminoInput.disabled = false;
   terminoInput.classList.remove('has-error');

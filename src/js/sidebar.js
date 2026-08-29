@@ -60,26 +60,6 @@
       </svg>`,
     },
     {
-      href: 'catalogo-ov.html',
-      label: 'Inventario OV',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2.5" y="2.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="8.5" y="2.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="2.5" y="8.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M8.5 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M8.5 13h3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>`,
-    },
-    {
-      href: 'tienda.html',
-      label: 'Simulación Tienda Web',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M2 5l1-3h10l1 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M2 5h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M5.5 8a2.5 2.5 0 005 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>`,
-    },
-    {
       href: 'presupuestos-lista.html',
       label: 'Presupuestos',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -87,23 +67,6 @@
         <path d="M10 2v3h3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
         <path d="M5 8.5l1.2 1.2L8.8 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M9.6 8h1.8M9.6 10.4h1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>`,
-    },
-    {
-      href: 'actualizacion-precios.html',
-      label: 'Verificación de Precios',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M2 8a6 6 0 0110.5-3.9M14 8a6 6 0 01-10.5 3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M12.2 2.5v2.3h-2.3M3.8 13.5v-2.3h2.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>`,
-    },
-    {
-      href: 'historial-precios.html',
-      label: 'Historial de Verificación',
-      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M8 3.2v4l2.6 1.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="8" cy="8" r="5.8" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M11.8 11.8l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`,
     },
   ];
